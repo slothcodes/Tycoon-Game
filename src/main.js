@@ -12,9 +12,19 @@ import { EventBus } from './core/EventBus.js';
 
 let gameLoopInterval = null;
 let chartCtrl = null;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+  }
+}
 
 function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+  if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -66,7 +76,8 @@ function startGame() {
   document.getElementById('onboarding-modal').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  initAudio();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
   if (!gameLoopInterval) {
     gameLoopInterval = setInterval(gameLoop, GAME_CONFIG.tickRateMs);
