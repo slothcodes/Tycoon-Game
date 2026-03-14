@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Boardroom Tycoon Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- Onboarding Modal -->
+    <div id="onboarding-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+      <div class="modal-content">
+        <h2 id="onboarding-title">Welcome to The Boardroom</h2>
+        <p>Manage your portfolio, buy/sell stocks, and try to gain a monopoly (51%+ ownership) over all companies.</p>
+        <p>Beware: If you run out of cash and your net worth falls below $500,000, you will declare bankruptcy.</p>
+        <button id="start-game-btn">Start Game</button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+      <div class="modal-content">
+        <h2 id="game-over-title">Game Over: Bankruptcy</h2>
+        <p>You have run out of funds and your net worth is too low.</p>
+        <button id="restart-game-btn">Restart Game</button>
+      </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victory-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+      <div class="modal-content">
+        <h2 id="victory-title">Monopoly Achieved!</h2>
+        <p>Congratulations! You have gained a controlling interest (51%+) in all companies.</p>
+        <button id="play-again-btn">Play Again</button>
+      </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app" class="hidden">
+      <!-- Top Ticker -->
+      <header class="ticker-container" aria-live="polite" aria-atomic="true">
+        <div id="ticker" class="ticker-content"></div>
+      </header>
+
+      <!-- Main Dashboard Grid -->
+      <main class="dashboard-grid">
+        <!-- Sidebar: Player Info -->
+        <aside class="panel player-panel">
+          <h2>Player Stats</h2>
+          <div class="stat-row"><span>Cash:</span> <span id="player-cash" data-field="cash">$0</span></div>
+          <div class="stat-row"><span>Net Worth:</span> <span id="player-networth" data-field="netWorth">$0</span></div>
+          <div class="stat-row"><span>Market Day:</span> <span id="market-day" data-field="day">1</span></div>
+
+          <h3 class="mt-4">Your Portfolio</h3>
+          <ul id="portfolio-list" class="portfolio-list"></ul>
+        </aside>
+
+        <!-- Main Content: Market View & Charts -->
+        <section class="panel market-panel">
+          <div class="market-header">
+            <h2>Market Overview</h2>
+            <div class="market-controls">
+              <label for="company-select">Select Company:</label>
+              <select id="company-select"></select>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <canvas id="stock-chart"></canvas>
+          </div>
+
+          <div class="company-details" id="company-details">
+            <h3 id="selected-company-name">Company Name</h3>
+            <div class="stats-grid">
+              <div class="stat-item"><span>Price:</span> <span id="selected-company-price">$0.00</span></div>
+              <div class="stat-item"><span>Sector:</span> <span id="selected-company-sector">-</span></div>
+              <div class="stat-item"><span>Revenue:</span> <span id="selected-company-revenue">$0</span></div>
+              <div class="stat-item"><span>EPS:</span> <span id="selected-company-eps">$0.00</span></div>
+              <div class="stat-item"><span>Shares Out:</span> <span id="selected-company-shares">0</span></div>
+              <div class="stat-item"><span>Your Stake:</span> <span id="selected-company-stake">0%</span></div>
+            </div>
+          </div>
+
+          <div class="trading-controls">
+            <input type="number" id="trade-amount" placeholder="Shares" min="1" step="1">
+            <button id="buy-btn" class="btn-buy">Buy</button>
+            <button id="sell-btn" class="btn-sell">Sell</button>
+          </div>
+
+          <div id="boardroom-menu" class="hidden mt-4">
+            <h3>Boardroom Menu (Player Controlled)</h3>
+            <button id="issue-dividend-btn" disabled>Issue Dividend (WIP)</button>
+            <button id="stock-buyback-btn" disabled>Stock Buyback (WIP)</button>
+          </div>
+        </section>
+
+        <!-- Right Sidebar: News / Log -->
+        <aside class="panel news-panel">
+          <h2>News & Alerts</h2>
+          <ul id="news-list" class="news-list"></ul>
+        </aside>
+      </main>
+
+      <!-- Toast Container -->
+      <div id="toast-container"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
