@@ -114,8 +114,56 @@ export const Player = {
     } else {
       if (company.isPlayerControlled) {
         company.isPlayerControlled = false;
+        company.strategy = 'Balanced';
         EventBus.emit('NEWS_ALERT', `Player lost controlling interest in ${company.name}`);
       }
     }
+  },
+
+  forceDividend(companyId) {
+    const company = GameState.companies.find(c => c.id === companyId);
+    if (!company || !company.isPlayerControlled) return false;
+
+    if (company.cashOnHand < company.revenue * 0.1) {
+      EventBus.emit('TRADE_ERROR', 'Company has insufficient cash for a dividend.');
+      return false;
+    }
+
+    const dividendPool = company.cashOnHand * 0.5; // Distribute 50% of cash
+    company.cashOnHand -= dividendPool;
+    const dps = dividendPool / company.sharesOutstanding;
+    company.dividendYield = (dps / company.price) * 100;
+    company.strategy = 'Player Directed (Dividend Forced)';
+
+    // Payout to all shareholders (including player)
+    if (GameState.player.portfolio[companyId]) {
+      const playerShares = GameState.player.portfolio[companyId].shares;
+      const payout = playerShares * dps;
+      GameState.player.cash += payout;
+      GameState.player.totalDividends += payout;
+    }
+
+    EventBus.emit('NEWS_ALERT', `You forced ${company.name} to issue a special dividend of $${dps.toFixed(2)}/share.`);
+    EventBus.emit('PLAYER_UPDATED', GameState.player);
+    return true;
+  },
+
+  forceBuyback(companyId) {
+    const company = GameState.companies.find(c => c.id === companyId);
+    if (!company || !company.isPlayerControlled) return false;
+
+    if (company.cashOnHand < company.revenue * 0.1) {
+      EventBus.emit('TRADE_ERROR', 'Company has insufficient cash for a buyback.');
+      return false;
+    }
+
+    const buybackPool = company.cashOnHand * 0.5; // Use 50% of cash
+    company.cashOnHand -= buybackPool;
+    const sharesBought = Math.floor(buybackPool / company.price);
+    company.sharesOutstanding = Math.max(100000, company.sharesOutstanding - sharesBought);
+
+    EventBus.emit('NEWS_ALERT', `You forced ${company.name} to buy back ${sharesBought.toLocaleString()} shares.`);
+    EventBus.emit('PLAYER_UPDATED', GameState.player);
+    return true;
   }
 };
