@@ -1,7 +1,7 @@
 import { GameState } from './GameState.js';
 import { randomGaussian } from '../utils/math.js';
 import { EventBus } from './EventBus.js';
-import { MACRO_CONFIG } from '../utils/config.js';
+import { MACRO_CONFIG, MACRO_LOGIC } from '../utils/config.js';
 
 export const Market = {
   tick() {
@@ -19,21 +19,32 @@ export const Market = {
 
     GameState.market.macro.economicCycle += 1;
 
-    // Calculate GDP Growth
-    GameState.market.macro.gdpGrowth = 0.02 +
-      (Math.sin(GameState.market.macro.economicCycle * 0.1) * 0.03) +
-      (randomGaussian() * MACRO_CONFIG.gdpVolatility);
+    // Step A: Calculate GDP first, factoring in the current Interest Rate as a penalty.
+    const baseCycleGrowth = 0.02 + (Math.sin(GameState.market.macro.economicCycle * 0.1) * 0.03);
+    const interestRateDrag = GameState.market.macro.interestRate * MACRO_LOGIC.rateDragOnGDP;
+    const gdpNoise = randomGaussian() * MACRO_CONFIG.gdpVolatility;
+    GameState.market.macro.gdpGrowth = baseCycleGrowth - interestRateDrag + gdpNoise;
 
-    // Update Inflation
-    const inflationTarget = GameState.market.macro.gdpGrowth;
-    GameState.market.macro.inflation += (inflationTarget - GameState.market.macro.inflation) * 0.1 + (randomGaussian() * 0.005);
+    // Step B: Calculate Inflation based on the new GDP and current Interest Rate.
+    const gdpHeat = GameState.market.macro.gdpGrowth * MACRO_LOGIC.gdpHeatOnInf;
+    const interestRateCooling = GameState.market.macro.interestRate * MACRO_LOGIC.rateCoolingOnInf;
+    const inflationNoise = randomGaussian() * 0.005;
+    // Current inflation drifts towards the heat minus cooling.
+    const inflationTarget = Math.max(0, gdpHeat - interestRateCooling);
+    GameState.market.macro.inflation += (inflationTarget - GameState.market.macro.inflation) * 0.1 + inflationNoise;
+    GameState.market.macro.inflation = Math.max(0, GameState.market.macro.inflation);
 
-    // Central Bank Logic
-    if (GameState.market.macro.inflation > MACRO_CONFIG.targetInflation) {
-      GameState.market.macro.interestRate += 0.0025;
-    }
-    if (GameState.market.macro.gdpGrowth < 0) {
-      GameState.market.macro.interestRate -= 0.0025;
+    // Step C: Central Bank Logic (Fed Meeting every 30 ticks)
+    if (GameState.market.day % MACRO_LOGIC.fedMeetingInterval === 0) {
+      const inflationDiff = GameState.market.macro.inflation - MACRO_CONFIG.targetInflation;
+      // Change rates if deviation is > 0.5% (0.005)
+      if (Math.abs(inflationDiff) > 0.005) {
+        if (inflationDiff > 0) {
+          GameState.market.macro.interestRate += 0.0025; // Hike
+        } else {
+          GameState.market.macro.interestRate -= 0.0025; // Cut
+        }
+      }
     }
 
     // Ensure bounds for interest rate

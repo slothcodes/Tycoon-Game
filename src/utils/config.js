@@ -9,6 +9,13 @@ export const MACRO_CONFIG = {
   }
 };
 
+export const MACRO_LOGIC = {
+  fedMeetingInterval: 30, // Ticks between rate decisions
+  rateDragOnGDP: 0.15,    // Every 1% of interest reduces GDP growth by 0.15%
+  rateCoolingOnInf: 0.2,  // Every 1% of interest reduces Inflation by 0.2%
+  gdpHeatOnInf: 0.1       // Every 1% of GDP growth adds 0.1% to Inflation
+};
+
 export const GAME_CONFIG = {
   tickRateMs: 2000,
   startingCash: 1000000,

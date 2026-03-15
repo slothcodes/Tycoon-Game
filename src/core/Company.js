@@ -1,5 +1,5 @@
 import { randomGaussian } from '../utils/math.js';
-import { GAME_CONFIG } from '../utils/config.js';
+import { GAME_CONFIG, MACRO_CONFIG } from '../utils/config.js';
 import { GameState } from './GameState.js';
 import { EventBus } from './EventBus.js';
 
@@ -28,13 +28,24 @@ export class Company {
     const sectorMultiplier = sectorData.multiplier;
     const globalSentiment = GameState.market.globalSentiment;
 
-    // 1. Gross Revenue Update
     const gdpGrowth = GameState.market?.macro?.gdpGrowth || 0;
-    const newRevenue = this.revenue * (1 + gdpGrowth + (sectorMultiplier * 0.01));
+    const inflation = GameState.market?.macro?.inflation || 0;
+    const interestRate = GameState.market?.macro?.interestRate || 0.05;
+
+    // Sector-Specific Drag: Hit revenue harder based on interest rates
+    const rateSensitivity = MACRO_CONFIG.sectorSensitivities?.[this.sector]?.rateSensitivity || 1.0;
+    const rateDrag = interestRate * rateSensitivity;
+
+    // 1. Gross Revenue Update (Nominal GDP = Real GDP + Inflation)
+    const nominalGdpGrowth = gdpGrowth + inflation;
+    const revenueGrowth = nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01);
+    const newRevenue = this.revenue * (1 + revenueGrowth);
     this.revenue = newRevenue;
 
+    // Inflation-Linked Expenses
+    this.fixedCosts *= (1 + inflation);
+
     // 2. Interest Expense
-    const interestRate = GameState.market?.macro?.interestRate || 0.05;
     const interestExpense = this.totalDebt * interestRate;
 
     // 3. Net Income
