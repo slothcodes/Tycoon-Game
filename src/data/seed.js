@@ -9,6 +9,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 1000000,
     cashOnHand: 2000000,
     initialPrice: 50.00,
+    totalDebt: 15000000,
+    fixedCosts: 1000000
   },
   {
     id: "COMP_TECH_02",
@@ -19,6 +21,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 5000000,
     cashOnHand: 5000000,
     initialPrice: 120.00,
+    totalDebt: 45000000,
+    fixedCosts: 3000000
   },
   {
     id: "COMP_TECH_03",
@@ -29,6 +33,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 2000000,
     cashOnHand: 1000000,
     initialPrice: 85.00,
+    totalDebt: 24000000,
+    fixedCosts: 1600000
   },
   {
     id: "COMP_TECH_04",
@@ -39,6 +45,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 10000000,
     cashOnHand: 15000000,
     initialPrice: 200.00,
+    totalDebt: 90000000,
+    fixedCosts: 6000000
   },
   {
     id: "COMP_TECH_05",
@@ -49,6 +57,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 500000,
     cashOnHand: 500000,
     initialPrice: 20.00,
+    totalDebt: 6000000,
+    fixedCosts: 400000
   },
 
   // Low Volatility, High Margin (Energy)
@@ -61,6 +71,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 20000000,
     cashOnHand: 50000000,
     initialPrice: 65.00,
+    totalDebt: 300000000,
+    fixedCosts: 20000000
   },
   {
     id: "COMP_ENG_02",
@@ -71,6 +83,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 8000000,
     cashOnHand: 10000000,
     initialPrice: 45.00,
+    totalDebt: 75000000,
+    fixedCosts: 5000000
   },
   {
     id: "COMP_ENG_03",
@@ -81,6 +95,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 12000000,
     cashOnHand: 15000000,
     initialPrice: 55.00,
+    totalDebt: 120000000,
+    fixedCosts: 8000000
   },
   {
     id: "COMP_ENG_04",
@@ -91,6 +107,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 2000000,
     cashOnHand: 20000000,
     initialPrice: 15.00,
+    totalDebt: 15000000,
+    fixedCosts: 1000000
   },
   {
     id: "COMP_ENG_05",
@@ -101,6 +119,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 5000000,
     cashOnHand: 5000000,
     initialPrice: 35.00,
+    totalDebt: 45000000,
+    fixedCosts: 3000000
   },
 
   // Moderate Volatility, Moderate Margin (Retail)
@@ -113,6 +133,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 50000000,
     cashOnHand: 20000000,
     initialPrice: 110.00,
+    totalDebt: 600000000,
+    fixedCosts: 40000000
   },
   {
     id: "COMP_RET_02",
@@ -123,6 +145,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 10000000,
     cashOnHand: 5000000,
     initialPrice: 25.00,
+    totalDebt: 90000000,
+    fixedCosts: 6000000
   },
   {
     id: "COMP_RET_03",
@@ -133,6 +157,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 25000000,
     cashOnHand: 10000000,
     initialPrice: 40.00,
+    totalDebt: 240000000,
+    fixedCosts: 16000000
   },
   {
     id: "COMP_RET_04",
@@ -143,6 +169,8 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 15000000,
     cashOnHand: 8000000,
     initialPrice: 60.00,
+    totalDebt: 135000000,
+    fixedCosts: 9000000
   },
   {
     id: "COMP_RET_05",
@@ -153,5 +181,7 @@ export const SEED_COMPANIES = [
     sharesOutstanding: 18000000,
     cashOnHand: 12000000,
     initialPrice: 75.00,
+    totalDebt: 180000000,
+    fixedCosts: 12000000
   }
 ];

@@ -8,6 +8,10 @@ export function formatCurrency(value) {
   }).format(value);
 }
 
+export function formatPercent(value) {
+  return (value * 100).toFixed(2) + '%';
+}
+
 export function formatLargeNumber(value) {
   if (value >= 1e9) return (value / 1e9).toFixed(2) + 'B';
   if (value >= 1e6) return (value / 1e6).toFixed(2) + 'M';
