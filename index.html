@@ -54,11 +54,16 @@
           <div class="stat-row"><span>Market Day:</span> <span id="market-day" data-field="day">1</span></div>
 
           <h3 class="mt-4">Macro Environment</h3>
+          <div class="stat-row"><span>Phase:</span> <span id="macro-phase">-</span></div>
+          <div class="stat-row"><span>Fear & Greed:</span> <span id="macro-sentiment">-</span></div>
           <div class="stat-row"><span>Interest Rate:</span> <span id="macro-interest">-</span></div>
           <div class="stat-row"><span>Inflation:</span> <span id="macro-inflation">-</span></div>
           <div class="stat-row"><span>GDP Growth:</span> <span id="macro-gdp">-</span></div>
 
           <h3 class="mt-4">Your Portfolio</h3>
+          <div class="stat-row" style="font-size: 0.85em; margin-bottom: 1rem;">
+            <span>Dividends Earned:</span> <span id="player-dividends" style="color: var(--positive-color)">$0</span>
+          </div>
           <ul id="portfolio-list" class="portfolio-list"></ul>
         </aside>
 
@@ -85,6 +90,13 @@
               <div class="stat-item"><span>EPS:</span> <span id="selected-company-eps">$0.00</span></div>
               <div class="stat-item"><span>Shares Out:</span> <span id="selected-company-shares">0</span></div>
               <div class="stat-item"><span>Your Stake:</span> <span id="selected-company-stake">0%</span></div>
+              <div class="stat-item"><span>Rating:</span> <span id="selected-company-rating">-</span></div>
+              <div class="stat-item"><span>Total Debt:</span> <span id="selected-company-debt">$0</span></div>
+              <div class="stat-item"><span>Div Yield:</span> <span id="selected-company-yield">0%</span></div>
+            </div>
+            <div class="stat-item mt-4" style="text-align: center; border: none; padding-top: 0;">
+              <span>Current Strategy</span>
+              <span id="selected-company-strategy" style="color: var(--accent-color); font-weight: bold;">-</span>
             </div>
           </div>
 

@@ -9,11 +9,19 @@ export const GameState = {
   player: {
     cash: GAME_CONFIG.startingCash,
     portfolio: {},
-    netWorth: GAME_CONFIG.startingNetWorth
+    netWorth: GAME_CONFIG.startingNetWorth,
+    totalDividends: 0
   },
   market: {
     day: 1,
     globalSentiment: 1.0,
+    fearAndGreed: 50, // 0-100 scale
+    economicPhase: 'Expansion',
+    phaseTicksRemaining: 50,
+    commodities: {
+      energyCost: 1.0,
+      techCost: 1.0
+    },
     macro: {
       interestRate: 0.05,
       inflation: 0.02,
