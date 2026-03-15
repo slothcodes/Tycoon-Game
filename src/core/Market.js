@@ -94,6 +94,7 @@ export const Market = {
 
     // Tick all companies
     const activeCompanies = [];
+    let portfolioChanged = false;
     GameState.companies.forEach(company => {
       company.tick();
       if (!company.isBankrupt) {
@@ -103,10 +104,19 @@ export const Market = {
         // Clean up player portfolio
         if (GameState.player.portfolio[company.id]) {
           delete GameState.player.portfolio[company.id];
+          portfolioChanged = true;
         }
       }
     });
     GameState.companies = activeCompanies;
+
+    // Update player net worth automatically on every tick so holding values are live
+    import('./Player.js').then(module => {
+        module.Player.recalculateNetWorth();
+        if (portfolioChanged) {
+            EventBus.emit('PLAYER_UPDATED', GameState.player);
+        }
+    });
 
     // Handle IPOs
     if (Math.random() < GAME_CONFIG.ipoChancePerTick && GameState.companies.length < GAME_CONFIG.maxCompanies) {
