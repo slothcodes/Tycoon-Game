@@ -29,11 +29,13 @@ export class Company {
     const globalSentiment = GameState.market.globalSentiment;
 
     // 1. Gross Revenue Update
-    const newRevenue = this.revenue * (1 + GameState.market.macro.gdpGrowth + (sectorMultiplier * 0.01));
+    const gdpGrowth = GameState.market?.macro?.gdpGrowth || 0;
+    const newRevenue = this.revenue * (1 + gdpGrowth + (sectorMultiplier * 0.01));
     this.revenue = newRevenue;
 
     // 2. Interest Expense
-    const interestExpense = this.totalDebt * GameState.market.macro.interestRate;
+    const interestRate = GameState.market?.macro?.interestRate || 0.05;
+    const interestExpense = this.totalDebt * interestRate;
 
     // 3. Net Income
     const netIncomeBeforeTax = (newRevenue * this.operatingMargin) - this.fixedCosts - interestExpense;
@@ -68,7 +70,8 @@ export class Company {
 
     // Valuation Algorithm
     // Dynamic Valuation & Discounted Multipliers
-    const effectivePE = sectorPE * (1 / (1 + GameState.market.macro.interestRate * 10));
+    const currentRate = GameState.market?.macro?.interestRate || 0.05;
+    const effectivePE = sectorPE * (1 / (1 + currentRate * 10));
 
     // Avoid negative or zero base valuation
     let fundamentalPrice = ((Math.max(trailingEPS, 0.01) * effectivePE) * globalSentiment);

@@ -92,10 +92,10 @@ export const Dashboard = {
   update() {
     this.elements.marketDay.textContent = GameState.market.day;
 
-    if (this.elements.macroInterest && GameState.market && GameState.market.macro) {
-      this.elements.macroInterest.textContent = formatPercent(GameState.market.macro.interestRate || 0);
-      this.elements.macroInflation.textContent = formatPercent(GameState.market.macro.inflation || 0);
-      this.elements.macroGdp.textContent = formatPercent(GameState.market.macro.gdpGrowth || 0);
+    if (this.elements.macroInterest) {
+      this.elements.macroInterest.textContent = formatPercent(GameState.market?.macro?.interestRate || 0);
+      this.elements.macroInflation.textContent = formatPercent(GameState.market?.macro?.inflation || 0);
+      this.elements.macroGdp.textContent = formatPercent(GameState.market?.macro?.gdpGrowth || 0);
     }
 
     this.updatePlayerPanel();
