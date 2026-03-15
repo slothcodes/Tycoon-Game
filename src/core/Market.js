@@ -8,6 +8,15 @@ export const Market = {
     GameState.market.day += 1;
 
     // Macro Economic Cycle Update
+    if (!GameState.market.macro) {
+      GameState.market.macro = {
+        interestRate: 0.05,
+        inflation: 0.02,
+        gdpGrowth: 0.02,
+        economicCycle: 0
+      };
+    }
+
     GameState.market.macro.economicCycle += 1;
 
     // Calculate GDP Growth

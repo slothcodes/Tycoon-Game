@@ -43,7 +43,9 @@ export const Ticker = {
   },
 
   checkMacroNews() {
-    const currentRate = GameState.market.macro.interestRate;
+    const currentRate = GameState.market?.macro?.interestRate;
+    if (currentRate === undefined) return;
+
     if (this.previousInterestRate !== null && currentRate !== this.previousInterestRate) {
       const action = currentRate > this.previousInterestRate ? "RAISES" : "CUTS";
       // To avoid spamming, only alert on significant changes like intervals of 0.25%, but since we tick by 0.0025,

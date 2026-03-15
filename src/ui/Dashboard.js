@@ -93,9 +93,9 @@ export const Dashboard = {
     this.elements.marketDay.textContent = GameState.market.day;
 
     if (this.elements.macroInterest) {
-      this.elements.macroInterest.textContent = formatPercent(GameState.market.macro.interestRate);
-      this.elements.macroInflation.textContent = formatPercent(GameState.market.macro.inflation);
-      this.elements.macroGdp.textContent = formatPercent(GameState.market.macro.gdpGrowth);
+      this.elements.macroInterest.textContent = formatPercent(GameState.market?.macro?.interestRate || 0);
+      this.elements.macroInflation.textContent = formatPercent(GameState.market?.macro?.inflation || 0);
+      this.elements.macroGdp.textContent = formatPercent(GameState.market?.macro?.gdpGrowth || 0);
     }
 
     this.updatePlayerPanel();

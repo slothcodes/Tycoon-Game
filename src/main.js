@@ -108,6 +108,16 @@ function init() {
       Object.assign(c, data);
       return c;
     });
+
+    // Migrate old saves: Add missing macro object if it doesn't exist
+    if (GameState.market && !GameState.market.macro) {
+      GameState.market.macro = {
+        interestRate: 0.05,
+        inflation: 0.02,
+        gdpGrowth: 0.02,
+        economicCycle: 0
+      };
+    }
   }
 
   // Init UI
