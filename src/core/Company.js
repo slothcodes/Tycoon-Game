@@ -1,6 +1,7 @@
 import { randomGaussian } from '../utils/math.js';
 import { GAME_CONFIG } from '../utils/config.js';
 import { GameState } from './GameState.js';
+import { EventBus } from './EventBus.js';
 
 export class Company {
   constructor(data) {
@@ -16,25 +17,42 @@ export class Company {
     this.epsHistory = [];
     this.eps = 0;
     this.isPlayerControlled = false;
+    this.totalDebt = data.totalDebt || 0;
+    this.fixedCosts = data.fixedCosts || 0;
+    this.negativeCashTicks = 0;
   }
 
   tick() {
     const sectorData = GameState.market.sectors[this.sector];
-    const sectorVolatility = sectorData.volatility;
+    const sectorVolatility = sectorData.volatility; // Retained if needed
     const sectorMultiplier = sectorData.multiplier;
     const globalSentiment = GameState.market.globalSentiment;
 
     // 1. Gross Revenue Update
-    this.revenue = this.revenue * (1 + (randomGaussian() * sectorVolatility));
+    const newRevenue = this.revenue * (1 + GameState.market.macro.gdpGrowth + (sectorMultiplier * 0.01));
+    this.revenue = newRevenue;
 
-    // 2. Operating Income
-    const ebitda = this.revenue * this.operatingMargin;
+    // 2. Interest Expense
+    const interestExpense = this.totalDebt * GameState.market.macro.interestRate;
 
     // 3. Net Income
-    const netIncome = ebitda * (1 - GAME_CONFIG.taxRate);
+    const netIncomeBeforeTax = (newRevenue * this.operatingMargin) - this.fixedCosts - interestExpense;
+    const netIncome = netIncomeBeforeTax * (1 - GAME_CONFIG.taxRate);
 
     // 4. Cash Flow
     this.cashOnHand += netIncome;
+
+    // Bankruptcy Guard
+    if (this.cashOnHand < 0) {
+      this.negativeCashTicks++;
+    } else {
+      this.negativeCashTicks = 0;
+    }
+
+    if (this.negativeCashTicks > 12) {
+      EventBus.emit('NEWS_ALERT', `${this.name} has entered restructuring.`);
+      this.negativeCashTicks = 0; // reset to avoid spam
+    }
 
     // 5. EPS
     this.eps = netIncome / this.sharesOutstanding;
@@ -49,8 +67,11 @@ export class Company {
     const sectorPE = sectorData.pe || 15;
 
     // Valuation Algorithm
+    // Dynamic Valuation & Discounted Multipliers
+    const effectivePE = sectorPE * (1 / (1 + GameState.market.macro.interestRate * 10));
+
     // Avoid negative or zero base valuation
-    let fundamentalPrice = ((Math.max(trailingEPS, 0.01) * sectorPE) * globalSentiment);
+    let fundamentalPrice = ((Math.max(trailingEPS, 0.01) * effectivePE) * globalSentiment);
     // Adjust based on sector multiplier
     fundamentalPrice *= sectorMultiplier;
 

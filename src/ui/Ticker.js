@@ -1,16 +1,25 @@
 import { EventBus } from '../core/EventBus.js';
 import { GameState } from '../core/GameState.js';
-import { formatCurrency } from '../utils/math.js';
+import { formatCurrency, formatPercent } from '../utils/math.js';
 
 export const Ticker = {
   element: null,
   newsList: null,
+  previousInterestRate: null,
 
   init() {
     this.element = document.getElementById('ticker');
     this.newsList = document.getElementById('news-list');
 
-    EventBus.on('MARKET_UPDATED', () => this.updateTicker());
+    // Initialize previous rate
+    if (GameState.market.macro && GameState.market.macro.interestRate !== undefined) {
+      this.previousInterestRate = GameState.market.macro.interestRate;
+    }
+
+    EventBus.on('MARKET_UPDATED', () => {
+      this.updateTicker();
+      this.checkMacroNews();
+    });
     EventBus.on('NEWS_ALERT', (msg) => this.addNews(msg));
     EventBus.on('TRADE_SUCCESS', (msg) => this.addNews(`[TRADE] ${msg}`));
 
@@ -31,6 +40,17 @@ export const Ticker = {
     }).join(' | ');
 
     this.element.innerHTML = tickerItems;
+  },
+
+  checkMacroNews() {
+    const currentRate = GameState.market.macro.interestRate;
+    if (this.previousInterestRate !== null && currentRate !== this.previousInterestRate) {
+      const action = currentRate > this.previousInterestRate ? "RAISES" : "CUTS";
+      // To avoid spamming, only alert on significant changes like intervals of 0.25%, but since we tick by 0.0025,
+      // let's alert whenever it actually changes.
+      this.addNews(`FED ${action} RATES TO ${formatPercent(currentRate)}`);
+      this.previousInterestRate = currentRate;
+    }
   },
 
   addNews(msg) {

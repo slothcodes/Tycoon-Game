@@ -1,3 +1,14 @@
+export const MACRO_CONFIG = {
+  targetInflation: 0.02,
+  baseInterestRate: 0.05,
+  gdpVolatility: 0.01,
+  sectorSensitivities: {
+    Tech: { rateSensitivity: 1.5 },
+    Energy: { rateSensitivity: 0.5 },
+    Retail: { rateSensitivity: 1.0 }
+  }
+};
+
 export const GAME_CONFIG = {
   tickRateMs: 2000,
   startingCash: 1000000,

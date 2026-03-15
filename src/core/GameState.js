@@ -14,6 +14,12 @@ export const GameState = {
   market: {
     day: 1,
     globalSentiment: 1.0,
+    macro: {
+      interestRate: 0.05,
+      inflation: 0.02,
+      gdpGrowth: 0.02,
+      economicCycle: 0
+    },
     sectors: {
       Tech: { multiplier: 1.2, volatility: 0.05, pe: 25 },
       Energy: { multiplier: 0.8, volatility: 0.08, pe: 10 },

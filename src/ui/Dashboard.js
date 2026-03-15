@@ -1,7 +1,7 @@
 import { GameState } from '../core/GameState.js';
 import { Player } from '../core/Player.js';
 import { EventBus } from '../core/EventBus.js';
-import { formatCurrency, formatLargeNumber } from '../utils/math.js';
+import { formatCurrency, formatLargeNumber, formatPercent } from '../utils/math.js';
 import { GAME_CONFIG } from '../utils/config.js';
 
 export const Dashboard = {
@@ -25,7 +25,10 @@ export const Dashboard = {
       tradeAmount: document.getElementById('trade-amount'),
       buyBtn: document.getElementById('buy-btn'),
       sellBtn: document.getElementById('sell-btn'),
-      boardroomMenu: document.getElementById('boardroom-menu')
+      boardroomMenu: document.getElementById('boardroom-menu'),
+      macroInterest: document.getElementById('macro-interest'),
+      macroInflation: document.getElementById('macro-inflation'),
+      macroGdp: document.getElementById('macro-gdp')
     };
 
     this.populateCompanySelect();
@@ -88,6 +91,13 @@ export const Dashboard = {
 
   update() {
     this.elements.marketDay.textContent = GameState.market.day;
+
+    if (this.elements.macroInterest) {
+      this.elements.macroInterest.textContent = formatPercent(GameState.market.macro.interestRate);
+      this.elements.macroInflation.textContent = formatPercent(GameState.market.macro.inflation);
+      this.elements.macroGdp.textContent = formatPercent(GameState.market.macro.gdpGrowth);
+    }
+
     this.updatePlayerPanel();
     this.updateCompanyDetails();
   },
