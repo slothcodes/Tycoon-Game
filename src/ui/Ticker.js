@@ -43,6 +43,8 @@ export const Ticker = {
   },
 
   checkMacroNews() {
+    if (!GameState.market || !GameState.market.macro || GameState.market.macro.interestRate === undefined) return;
+
     const currentRate = GameState.market.macro.interestRate;
     if (this.previousInterestRate !== null && currentRate !== this.previousInterestRate) {
       const action = currentRate > this.previousInterestRate ? "RAISES" : "CUTS";
