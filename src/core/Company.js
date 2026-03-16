@@ -1,5 +1,5 @@
 import { randomGaussian } from '../utils/math.js';
-import { GAME_CONFIG, CREDIT_RATING_SPREADS, SECTOR_COMMODITY_EXPOSURE } from '../utils/config.js';
+import { GAME_CONFIG, MACRO_CONFIG, CREDIT_RATING_SPREADS, SECTOR_COMMODITY_EXPOSURE } from '../utils/config.js';
 import { GameState } from './GameState.js';
 import { EventBus } from './EventBus.js';
 
@@ -130,9 +130,18 @@ export class Company {
     const sectorMultiplier = sectorData.multiplier;
     const globalSentiment = GameState.market.globalSentiment;
 
-    // 1. Gross Revenue Update & Commodity Impact
     const gdpGrowth = GameState.market?.macro?.gdpGrowth || 0;
-    this.revenue = this.revenue * (1 + gdpGrowth + (sectorMultiplier * 0.01));
+    const inflation = GameState.market?.macro?.inflation || 0;
+    const interestRate = GameState.market?.macro?.interestRate || 0.05;
+
+    // Sector-Specific Drag: Hit revenue harder based on interest rates
+    const rateSensitivity = MACRO_CONFIG.sectorSensitivities?.[this.sector]?.rateSensitivity || 1.0;
+    const rateDrag = interestRate * rateSensitivity;
+
+    // 1. Gross Revenue Update (Nominal GDP = Real GDP + Inflation) & Commodity Impact
+    const nominalGdpGrowth = gdpGrowth + inflation;
+    const dailyRevenueGrowth = (nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01)) / 30;
+    this.revenue = this.revenue * (1 + dailyRevenueGrowth);
 
     // Calculate operating margin impact from commodities
     let effectiveMargin = this.operatingMargin;
@@ -144,13 +153,16 @@ export class Company {
       effectiveMargin -= (energyImpact + techImpact) * 0.1; // scale down impact
     }
 
+    // Inflation-Linked Expenses
+    this.fixedCosts *= (1 + (inflation / 30));
+
     const operatingIncome = (this.revenue * effectiveMargin) - this.fixedCosts;
 
     // 2. Interest Expense
-    const baseRate = GameState.market?.macro?.interestRate || 0.05;
+    const baseRate = interestRate; // from top
     const spread = CREDIT_RATING_SPREADS[this.creditRating] || 0.025;
-    const interestRate = baseRate + spread;
-    const interestExpense = this.totalDebt * interestRate;
+    const effectiveInterestRate = baseRate + spread;
+    const interestExpense = this.totalDebt * effectiveInterestRate;
 
     this.updateCreditRating(interestExpense, operatingIncome);
 
