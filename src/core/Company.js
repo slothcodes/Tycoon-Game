@@ -38,12 +38,16 @@ export class Company {
 
     // 1. Gross Revenue Update (Nominal GDP = Real GDP + Inflation)
     const nominalGdpGrowth = gdpGrowth + inflation;
-    const revenueGrowth = nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01);
-    const newRevenue = this.revenue * (1 + revenueGrowth);
+    // Scale daily growth so it isn't massive. Assume gdpGrowth is an annualized figure, but we want the simulation to move visibly.
+    // However, previously it was `1 + gdpGrowth + (sectorMultiplier * 0.01)`.
+    // Let's divide the annual rate by a reasonable number of simulation ticks (e.g., 30) so we see changes but not insane explosion.
+    const dailyRevenueGrowth = (nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01)) / 30;
+    const newRevenue = this.revenue * (1 + dailyRevenueGrowth);
     this.revenue = newRevenue;
 
     // Inflation-Linked Expenses
-    this.fixedCosts *= (1 + inflation);
+    // Scale inflation similarly
+    this.fixedCosts *= (1 + (inflation / 30));
 
     // 2. Interest Expense
     const interestExpense = this.totalDebt * interestRate;
@@ -60,11 +64,6 @@ export class Company {
       this.negativeCashTicks++;
     } else {
       this.negativeCashTicks = 0;
-    }
-
-    if (this.negativeCashTicks > 12) {
-      EventBus.emit('NEWS_ALERT', `${this.name} has entered restructuring.`);
-      this.negativeCashTicks = 0; // reset to avoid spam
     }
 
     // 5. EPS

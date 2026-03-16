@@ -70,6 +70,48 @@ export const Market = {
       company.tick();
     });
 
+    // Handle Bankruptcies (Delisting & Replacement)
+    const activeCompanies = [];
+    GameState.companies.forEach(company => {
+      // If a company has been bankrupt for too long (12 ticks negative cash), delist it
+      if (company.negativeCashTicks > 12) {
+        EventBus.emit('NEWS_ALERT', `BANKRUPTCY: ${company.name} has been delisted.`);
+        EventBus.emit('BANKRUPTCY', company.id);
+
+        // Wipe out player's shares
+        if (GameState.player.portfolio[company.id]) {
+          delete GameState.player.portfolio[company.id];
+          EventBus.emit('NEWS_ALERT', `Your shares in ${company.name} are now worthless.`);
+        }
+
+        // Spawn a replacement company in the same sector
+        const newCompanyData = {
+          id: `COMP_${company.sector.substring(0, 3).toUpperCase()}_${Date.now()}`,
+          name: `${company.sector} Innovations ${Math.floor(Math.random() * 1000)}`,
+          sector: company.sector,
+          revenue: company.revenue * 0.5, // Start smaller
+          operatingMargin: 0.10, // Fresh start margin
+          sharesOutstanding: company.sharesOutstanding,
+          cashOnHand: company.sharesOutstanding * 2, // Decent cash buffer
+          initialPrice: 10.00, // IPO price
+          totalDebt: 0, // Clean slate
+          fixedCosts: company.fixedCosts * 0.5
+        };
+
+        // Dynamic import to prevent circular dependencies if not needed, or just use the Company class
+        // Since we are in Market.js and Company.js depends on Market, let's just emit an event to main.js to handle the instantiation, or just require it if safe.
+        // Actually, we can import Company at the top of Market.js. Let's add the import.
+
+        EventBus.emit('SPAWN_COMPANY', newCompanyData);
+      } else {
+        activeCompanies.push(company);
+      }
+    });
+
+    if (activeCompanies.length !== GameState.companies.length) {
+      GameState.companies = activeCompanies;
+    }
+
     EventBus.emit('MARKET_UPDATED', GameState);
   }
 };
