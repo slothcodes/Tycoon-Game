@@ -133,10 +133,10 @@ function init() {
   }
 
   // Init UI
+  chartCtrl = new ChartCtrl('stock-chart'); // Init before Dashboard so it catches the first COMPANY_SELECTED event
   Dashboard.init();
   Ticker.init();
   Toast.init();
-  chartCtrl = new ChartCtrl('stock-chart');
 
   // Bind Audio
   EventBus.on('TRADE_SUCCESS', () => playBeep(600, 'sine', 0.1));

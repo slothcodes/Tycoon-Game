@@ -53,5 +53,7 @@ export const GAME_CONFIG = {
   saveIntervalTicks: 10,
   maxPriceHistory: 100,
   ipoChancePerTick: 0.02,
-  maxCompanies: 20
+  maxCompanies: 20,
+  softPriceCap: 500, // Price above which valuation multiples are compressed (selling weight)
+  stockSplitThreshold: 800 // Price at which a 2-for-1 stock split triggers
 };
