@@ -1,7 +1,7 @@
 import { GameState } from './GameState.js';
 import { randomGaussian } from '../utils/math.js';
 import { EventBus } from './EventBus.js';
-import { MACRO_CONFIG, MACRO_LOGIC, GAME_CONFIG } from '../utils/config.js';
+import { MACRO_CONFIG, GAME_CONFIG } from '../utils/config.js';
 import { Company } from './Company.js';
 
 export const Market = {
@@ -34,6 +34,35 @@ export const Market = {
 
       const durationConfig = MACRO_CONFIG.phaseDurations[GameState.market.economicPhase];
       GameState.market.phaseTicksRemaining = Math.floor(Math.random() * (durationConfig.max - durationConfig.min + 1)) + durationConfig.min;
+
+      EventBus.emit('NEWS_ALERT', `Economic shift: We are entering a period of ${GameState.market.economicPhase}.`);
+    }
+
+    const phaseConfig = MACRO_CONFIG.phaseDurations[GameState.market.economicPhase];
+
+    // Calculate GDP Growth
+    GameState.market.macro.gdpGrowth += (phaseConfig.gdpTarget - GameState.market.macro.gdpGrowth) * 0.1 + (randomGaussian() * MACRO_CONFIG.gdpVolatility);
+
+    // Update Inflation
+    GameState.market.macro.inflation += (phaseConfig.inflationTarget - GameState.market.macro.inflation) * 0.1 + (randomGaussian() * 0.005);
+
+    // Fear and Greed Index Update
+    let fearGreedDrift = 0;
+    if (GameState.market.economicPhase === 'Expansion') fearGreedDrift = 1;
+    else if (GameState.market.economicPhase === 'Contraction') fearGreedDrift = -1;
+    else if (GameState.market.economicPhase === 'Peak') fearGreedDrift = 0.5;
+    else fearGreedDrift = -0.5;
+
+    fearGreedDrift += randomGaussian() * 2;
+    GameState.market.fearAndGreed = Math.max(0, Math.min(100, GameState.market.fearAndGreed + fearGreedDrift));
+
+    // Commodities Update
+    const commodityDrift = (GameState.market.economicPhase === 'Expansion' || GameState.market.economicPhase === 'Peak') ? 0.01 : -0.01;
+    GameState.market.commodities.energyCost += commodityDrift + (randomGaussian() * 0.02);
+    GameState.market.commodities.energyCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.energyCost));
+
+    GameState.market.commodities.techCost += (commodityDrift * 0.5) + (randomGaussian() * 0.015);
+    GameState.market.commodities.techCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.techCost));
 
       EventBus.emit('NEWS_ALERT', `Economic shift: We are entering a period of ${GameState.market.economicPhase}.`);
     }
@@ -131,6 +160,15 @@ export const Market = {
             EventBus.emit('PLAYER_UPDATED', GameState.player);
         }
     });
+    GameState.companies = activeCompanies;
+
+    // Update player net worth automatically on every tick so holding values are live
+    import('./Player.js').then(module => {
+        module.Player.recalculateNetWorth();
+        if (portfolioChanged) {
+            EventBus.emit('PLAYER_UPDATED', GameState.player);
+        }
+    });
 
     // Handle IPOs
     if (Math.random() < GAME_CONFIG.ipoChancePerTick && GameState.companies.length < GAME_CONFIG.maxCompanies) {
@@ -155,6 +193,28 @@ export const Market = {
     }
 
 
+
+    // Handle IPOs
+    if (Math.random() < GAME_CONFIG.ipoChancePerTick && GameState.companies.length < GAME_CONFIG.maxCompanies) {
+      const sectors = Object.keys(GameState.market.sectors);
+      const randomSector = sectors[Math.floor(Math.random() * sectors.length)];
+
+      const newCompanyData = {
+        id: `COMP_${randomSector.substring(0,3).toUpperCase()}_${Date.now()}`,
+        name: `New ${randomSector} Corp ${Math.floor(Math.random() * 1000)}`,
+        sector: randomSector,
+        revenue: Math.random() * 10000000 + 1000000,
+        operatingMargin: Math.random() * 0.2 + 0.05,
+        sharesOutstanding: Math.floor(Math.random() * 10000000) + 1000000,
+        cashOnHand: Math.random() * 5000000 + 1000000,
+        initialPrice: Math.random() * 40 + 10,
+        totalDebt: Math.random() * 5000000,
+        fixedCosts: Math.random() * 1000000 + 500000
+      };
+      const newCompany = new Company(newCompanyData);
+      GameState.companies.push(newCompany);
+      EventBus.emit('NEWS_ALERT', `IPO: ${newCompany.name} has gone public!`);
+    }
 
     EventBus.emit('MARKET_UPDATED', GameState);
   }
