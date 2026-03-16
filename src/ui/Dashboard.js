@@ -22,16 +22,26 @@ export const Dashboard = {
       selectedEps: document.getElementById('selected-company-eps'),
       selectedShares: document.getElementById('selected-company-shares'),
       selectedStake: document.getElementById('selected-company-stake'),
+      selectedRating: document.getElementById('selected-company-rating'),
+      selectedDebt: document.getElementById('selected-company-debt'),
+      selectedYield: document.getElementById('selected-company-yield'),
+      selectedStrategy: document.getElementById('selected-company-strategy'),
       tradeAmount: document.getElementById('trade-amount'),
       buyBtn: document.getElementById('buy-btn'),
       sellBtn: document.getElementById('sell-btn'),
       boardroomMenu: document.getElementById('boardroom-menu'),
+      macroPhase: document.getElementById('macro-phase'),
+      macroSentiment: document.getElementById('macro-sentiment'),
       macroInterest: document.getElementById('macro-interest'),
       macroInflation: document.getElementById('macro-inflation'),
-      macroGdp: document.getElementById('macro-gdp')
+      macroGdp: document.getElementById('macro-gdp'),
+      playerDividends: document.getElementById('player-dividends')
     };
 
     this.populateCompanySelect();
+
+    this.elements.issueDividendBtn = document.getElementById('issue-dividend-btn');
+    this.elements.stockBuybackBtn = document.getElementById('stock-buyback-btn');
 
     // Select first company by default
     if (GameState.companies.length > 0) {
@@ -41,6 +51,14 @@ export const Dashboard = {
     // Bind UI Events
     this.elements.companySelect.addEventListener('change', (e) => {
       this.selectCompany(e.target.value);
+    });
+
+    this.elements.issueDividendBtn.addEventListener('click', () => {
+        Player.forceDividend(this.selectedCompanyId);
+    });
+
+    this.elements.stockBuybackBtn.addEventListener('click', () => {
+        Player.forceBuyback(this.selectedCompanyId);
     });
 
     this.elements.buyBtn.addEventListener('click', () => {
@@ -73,6 +91,25 @@ export const Dashboard = {
       }
     });
 
+    // Handle IPOs and Bankruptcies UI updates
+    EventBus.on('NEWS_ALERT', (msg) => {
+      if (msg.startsWith('IPO:') || msg.startsWith('BANKRUPTCY:')) {
+        this.populateCompanySelect();
+        // If the selected company went bankrupt, select the first available one
+        if (!GameState.companies.find(c => c.id === this.selectedCompanyId)) {
+          if (GameState.companies.length > 0) {
+            this.selectCompany(GameState.companies[0].id);
+          } else {
+             this.selectedCompanyId = null;
+             this.updateCompanyDetails();
+          }
+        } else {
+            // Re-select the current one to ensure the dropdown shows the right value
+            this.elements.companySelect.value = this.selectedCompanyId;
+        }
+      }
+    });
+
     this.update();
   },
 
@@ -93,6 +130,15 @@ export const Dashboard = {
     this.elements.marketDay.textContent = GameState.market?.day || 1;
 
     if (this.elements.macroInterest) {
+      if (this.elements.macroPhase) {
+        this.elements.macroPhase.textContent = GameState.market?.economicPhase || 'Expansion';
+
+        let fgValue = GameState.market?.fearAndGreed || 50;
+        let fgText = fgValue > 75 ? 'Extreme Greed' : (fgValue > 55 ? 'Greed' : (fgValue < 25 ? 'Extreme Fear' : (fgValue < 45 ? 'Fear' : 'Neutral')));
+        if (this.elements.macroSentiment) {
+          this.elements.macroSentiment.textContent = `${Math.round(fgValue)} (${fgText})`;
+        }
+      }
       const macro = GameState.market && GameState.market.macro ? GameState.market.macro : null;
       this.elements.macroInterest.textContent = formatPercent(macro ? macro.interestRate : 0);
       this.elements.macroInflation.textContent = formatPercent(macro ? macro.inflation : 0);
@@ -106,6 +152,7 @@ export const Dashboard = {
   updatePlayerPanel() {
     this.elements.cash.textContent = formatCurrency(GameState.player.cash);
     this.elements.netWorth.textContent = formatCurrency(GameState.player.netWorth);
+    this.elements.playerDividends.textContent = formatCurrency(GameState.player.totalDividends || 0);
 
     // Render portfolio
     const portfolioHtml = Object.entries(GameState.player.portfolio).map(([compId, holding]) => {
@@ -143,6 +190,10 @@ export const Dashboard = {
     this.elements.selectedRevenue.textContent = formatCurrency(comp.revenue);
     this.elements.selectedEps.textContent = formatCurrency(comp.eps);
     this.elements.selectedShares.textContent = formatLargeNumber(comp.sharesOutstanding);
+    this.elements.selectedRating.textContent = comp.creditRating || '-';
+    this.elements.selectedDebt.textContent = formatLargeNumber(comp.totalDebt || 0);
+    this.elements.selectedYield.textContent = comp.dividendYield > 0 ? formatPercent(comp.dividendYield / 100) : '-';
+    this.elements.selectedStrategy.textContent = comp.strategy || '-';
 
     const holding = GameState.player.portfolio[comp.id];
     let stakeHtml = "0%";
@@ -157,8 +208,14 @@ export const Dashboard = {
 
     if (comp.isPlayerControlled) {
       this.elements.boardroomMenu.classList.remove('hidden');
+      this.elements.issueDividendBtn.disabled = false;
+      this.elements.stockBuybackBtn.disabled = false;
+      this.elements.issueDividendBtn.textContent = 'Issue Special Dividend';
+      this.elements.stockBuybackBtn.textContent = 'Authorize Share Buyback';
     } else {
       this.elements.boardroomMenu.classList.add('hidden');
+      this.elements.issueDividendBtn.disabled = true;
+      this.elements.stockBuybackBtn.disabled = true;
     }
   }
 };

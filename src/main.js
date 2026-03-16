@@ -109,7 +109,10 @@ function init() {
       return c;
     });
 
-    // Migrate old saves: Add missing macro object if it doesn't exist
+    // Migrate old saves: Add missing objects
+    if (!GameState.player.totalDividends) {
+      GameState.player.totalDividends = 0;
+    }
     if (!GameState.market) {
       GameState.market = { day: 1, globalSentiment: 1.0, sectors: {} };
     }
@@ -120,6 +123,12 @@ function init() {
         gdpGrowth: 0.02,
         economicCycle: 0
       };
+    }
+    if (!GameState.market.economicPhase) {
+      GameState.market.economicPhase = 'Expansion';
+      GameState.market.phaseTicksRemaining = 50;
+      GameState.market.fearAndGreed = 50;
+      GameState.market.commodities = { energyCost: 1.0, techCost: 1.0 };
     }
   }
 
