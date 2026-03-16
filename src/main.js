@@ -143,6 +143,13 @@ function init() {
   EventBus.on('TRADE_SUCCESS', () => playBeep(600, 'sine', 0.1));
   EventBus.on('TRADE_ERROR', () => playBeep(200, 'square', 0.2));
   EventBus.on('NEWS_ALERT', () => playBeep(400, 'triangle', 0.1));
+  EventBus.on('BANKRUPTCY', () => playBeep(150, 'sawtooth', 0.5));
+
+  // Game Engine Hooks
+  EventBus.on('SPAWN_COMPANY', (data) => {
+    GameState.companies.push(new Company(data));
+    Dashboard.populateCompanySelect(); // Refresh UI
+  });
 
   // Modals
   document.getElementById('start-game-btn').addEventListener('click', () => {

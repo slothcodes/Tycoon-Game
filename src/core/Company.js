@@ -174,7 +174,6 @@ export class Company {
       this.isBankrupt = true;
       return;
     }
-
     // 5. EPS
     this.eps = netIncome / this.sharesOutstanding;
 

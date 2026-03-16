@@ -64,12 +64,55 @@ export const Market = {
     GameState.market.commodities.techCost += (commodityDrift * 0.5) + (randomGaussian() * 0.015);
     GameState.market.commodities.techCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.techCost));
 
-    // Central Bank Logic
-    if (GameState.market.macro.inflation > MACRO_CONFIG.targetInflation) {
-      GameState.market.macro.interestRate += 0.0025;
+      EventBus.emit('NEWS_ALERT', `Economic shift: We are entering a period of ${GameState.market.economicPhase}.`);
     }
-    if (GameState.market.macro.gdpGrowth < 0) {
-      GameState.market.macro.interestRate -= 0.0025;
+
+    const phaseConfig = MACRO_CONFIG.phaseDurations[GameState.market.economicPhase];
+
+    // Step A: Calculate GDP first, factoring in the current Interest Rate as a penalty.
+    const baseCycleGrowth = phaseConfig.gdpTarget;
+    const interestRateDrag = GameState.market.macro.interestRate * MACRO_LOGIC.rateDragOnGDP;
+    const gdpNoise = randomGaussian() * MACRO_CONFIG.gdpVolatility;
+    GameState.market.macro.gdpGrowth += ((baseCycleGrowth - interestRateDrag) - GameState.market.macro.gdpGrowth) * 0.1 + gdpNoise;
+
+    // Step B: Calculate Inflation based on the new GDP and current Interest Rate.
+    const gdpHeat = GameState.market.macro.gdpGrowth * MACRO_LOGIC.gdpHeatOnInf;
+    const interestRateCooling = GameState.market.macro.interestRate * MACRO_LOGIC.rateCoolingOnInf;
+    const inflationNoise = randomGaussian() * 0.005;
+    // Current inflation drifts towards the heat minus cooling, alongside phase target
+    const inflationTarget = (Math.max(0, gdpHeat - interestRateCooling) + phaseConfig.inflationTarget) / 2;
+    GameState.market.macro.inflation += (inflationTarget - GameState.market.macro.inflation) * 0.1 + inflationNoise;
+    GameState.market.macro.inflation = Math.max(0, GameState.market.macro.inflation);
+
+    // Fear and Greed Index Update
+    let fearGreedDrift = 0;
+    if (GameState.market.economicPhase === 'Expansion') fearGreedDrift = 1;
+    else if (GameState.market.economicPhase === 'Contraction') fearGreedDrift = -1;
+    else if (GameState.market.economicPhase === 'Peak') fearGreedDrift = 0.5;
+    else fearGreedDrift = -0.5;
+
+    fearGreedDrift += randomGaussian() * 2;
+    GameState.market.fearAndGreed = Math.max(0, Math.min(100, GameState.market.fearAndGreed + fearGreedDrift));
+
+    // Commodities Update
+    const commodityDrift = (GameState.market.economicPhase === 'Expansion' || GameState.market.economicPhase === 'Peak') ? 0.01 : -0.01;
+    GameState.market.commodities.energyCost += commodityDrift + (randomGaussian() * 0.02);
+    GameState.market.commodities.energyCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.energyCost));
+
+    GameState.market.commodities.techCost += (commodityDrift * 0.5) + (randomGaussian() * 0.015);
+    GameState.market.commodities.techCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.techCost));
+
+    // Step C: Central Bank Logic (Fed Meeting every 30 ticks)
+    if (GameState.market.day % MACRO_LOGIC.fedMeetingInterval === 0) {
+      const inflationDiff = GameState.market.macro.inflation - MACRO_CONFIG.targetInflation;
+      // Change rates if deviation is > 0.5% (0.005)
+      if (Math.abs(inflationDiff) > 0.005) {
+        if (inflationDiff > 0) {
+          GameState.market.macro.interestRate += 0.0025; // Hike
+        } else {
+          GameState.market.macro.interestRate -= 0.0025; // Cut
+        }
+      }
     }
 
     // Ensure bounds for interest rate
@@ -117,6 +160,39 @@ export const Market = {
             EventBus.emit('PLAYER_UPDATED', GameState.player);
         }
     });
+    GameState.companies = activeCompanies;
+
+    // Update player net worth automatically on every tick so holding values are live
+    import('./Player.js').then(module => {
+        module.Player.recalculateNetWorth();
+        if (portfolioChanged) {
+            EventBus.emit('PLAYER_UPDATED', GameState.player);
+        }
+    });
+
+    // Handle IPOs
+    if (Math.random() < GAME_CONFIG.ipoChancePerTick && GameState.companies.length < GAME_CONFIG.maxCompanies) {
+      const sectors = Object.keys(GameState.market.sectors);
+      const randomSector = sectors[Math.floor(Math.random() * sectors.length)];
+
+      const newCompanyData = {
+        id: `COMP_${randomSector.substring(0,3).toUpperCase()}_${Date.now()}`,
+        name: `New ${randomSector} Corp ${Math.floor(Math.random() * 1000)}`,
+        sector: randomSector,
+        revenue: Math.random() * 10000000 + 1000000,
+        operatingMargin: Math.random() * 0.2 + 0.05,
+        sharesOutstanding: Math.floor(Math.random() * 10000000) + 1000000,
+        cashOnHand: Math.random() * 5000000 + 1000000,
+        initialPrice: Math.random() * 40 + 10,
+        totalDebt: Math.random() * 5000000,
+        fixedCosts: Math.random() * 1000000 + 500000
+      };
+      const newCompany = new Company(newCompanyData);
+      GameState.companies.push(newCompany);
+      EventBus.emit('NEWS_ALERT', `IPO: ${newCompany.name} has gone public!`);
+    }
+
+
 
     // Handle IPOs
     if (Math.random() < GAME_CONFIG.ipoChancePerTick && GameState.companies.length < GAME_CONFIG.maxCompanies) {
