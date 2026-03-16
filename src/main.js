@@ -113,7 +113,6 @@ function init() {
     if (!GameState.player.totalDividends) {
       GameState.player.totalDividends = 0;
     }
-
     if (!GameState.market) {
       GameState.market = { day: 1, globalSentiment: 1.0, sectors: {} };
     }

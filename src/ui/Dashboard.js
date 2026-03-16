@@ -129,13 +129,16 @@ export const Dashboard = {
   update() {
     this.elements.marketDay.textContent = GameState.market?.day || 1;
 
-    if (this.elements.macroPhase) {
-      this.elements.macroPhase.textContent = GameState.market?.economicPhase || 'Expansion';
+    if (this.elements.macroInterest) {
+      if (this.elements.macroPhase) {
+        this.elements.macroPhase.textContent = GameState.market?.economicPhase || 'Expansion';
 
-      let fgValue = GameState.market?.fearAndGreed || 50;
-      let fgText = fgValue > 75 ? 'Extreme Greed' : (fgValue > 55 ? 'Greed' : (fgValue < 25 ? 'Extreme Fear' : (fgValue < 45 ? 'Fear' : 'Neutral')));
-      this.elements.macroSentiment.textContent = `${Math.round(fgValue)} (${fgText})`;
-
+        let fgValue = GameState.market?.fearAndGreed || 50;
+        let fgText = fgValue > 75 ? 'Extreme Greed' : (fgValue > 55 ? 'Greed' : (fgValue < 25 ? 'Extreme Fear' : (fgValue < 45 ? 'Fear' : 'Neutral')));
+        if (this.elements.macroSentiment) {
+          this.elements.macroSentiment.textContent = `${Math.round(fgValue)} (${fgText})`;
+        }
+      }
       const macro = GameState.market && GameState.market.macro ? GameState.market.macro : null;
       this.elements.macroInterest.textContent = formatPercent(macro ? macro.interestRate : 0);
       this.elements.macroInflation.textContent = formatPercent(macro ? macro.inflation : 0);
