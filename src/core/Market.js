@@ -174,17 +174,24 @@ export const Market = {
       const middle = mid[Math.floor(Math.random() * mid.length)];
       const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
 
+      const revenue = Math.random() * 500000000 + 50000000;
+      const operatingMargin = Math.random() * 0.2 + 0.08; // 8% to 28% margin
+      const grossProfit = revenue * operatingMargin;
+      const fixedCosts = grossProfit * (Math.random() * 0.4 + 0.2); // 20-60% of gross profit
+      const operatingIncome = grossProfit - fixedCosts;
+      const totalDebt = Math.max(0, operatingIncome * (Math.random() * 3 + 1)); // 1x to 4x operating income
+
       const newCompanyData = {
         id: `COMP_${randomSector.substring(0,3).toUpperCase()}_${Date.now()}`,
         name: `${prefix} ${middle} ${suffix}`,
         sector: randomSector,
-        revenue: Math.random() * 10000000 + 1000000,
-        operatingMargin: Math.random() * 0.2 + 0.05,
-        sharesOutstanding: Math.floor(Math.random() * 10000000) + 1000000,
-        cashOnHand: Math.random() * 5000000 + 1000000,
+        revenue: revenue,
+        operatingMargin: operatingMargin,
+        sharesOutstanding: Math.floor(Math.random() * 50000000) + 10000000,
+        cashOnHand: operatingIncome * (Math.random() * 2 + 1),
         initialPrice: Math.random() * 40 + 10,
-        totalDebt: Math.random() * 5000000,
-        fixedCosts: Math.random() * 1000000 + 500000
+        totalDebt: totalDebt,
+        fixedCosts: fixedCosts
       };
       const newCompany = new Company(newCompanyData);
       GameState.companies.push(newCompany);
