@@ -1,5 +1,6 @@
 export const MACRO_CONFIG = {
   targetInflation: 0.02,
+  targetGdp: 0.02,
   baseInterestRate: 0.05,
   gdpVolatility: 0.01,
   sectorSensitivities: {
@@ -9,10 +10,11 @@ export const MACRO_CONFIG = {
   },
   phases: ['Expansion', 'Peak', 'Contraction', 'Trough'],
   phaseDurations: {
-    Expansion: { min: 40, max: 80, gdpTarget: 0.04, inflationTarget: 0.03 },
-    Peak: { min: 10, max: 30, gdpTarget: 0.02, inflationTarget: 0.05 },
-    Contraction: { min: 20, max: 50, gdpTarget: -0.02, inflationTarget: 0.01 },
-    Trough: { min: 10, max: 30, gdpTarget: 0.00, inflationTarget: -0.01 }
+    // Multiplied by ~10 to simulate real world years assuming 1 tick = 1 day
+    Expansion: { min: 400, max: 800, gdpTarget: 0.04, inflationTarget: 0.03 },
+    Peak: { min: 100, max: 300, gdpTarget: 0.02, inflationTarget: 0.05 },
+    Contraction: { min: 200, max: 500, gdpTarget: -0.02, inflationTarget: 0.01 },
+    Trough: { min: 100, max: 300, gdpTarget: 0.00, inflationTarget: -0.01 }
   }
 };
 

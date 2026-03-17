@@ -41,20 +41,23 @@ export const Market = {
 
     const phaseConfig = MACRO_CONFIG.phaseDurations[GameState.market.economicPhase];
 
-    // Step A: Calculate GDP first, factoring in the current Interest Rate as a penalty.
-    const baseCycleGrowth = phaseConfig.gdpTarget;
-    const interestRateDrag = GameState.market.macro.interestRate * MACRO_LOGIC.rateDragOnGDP;
-    const gdpNoise = randomGaussian() * MACRO_CONFIG.gdpVolatility;
-    GameState.market.macro.gdpGrowth += ((baseCycleGrowth - interestRateDrag) - GameState.market.macro.gdpGrowth) * 0.1 + gdpNoise;
+    // GDP updates once a quarter (90 days)
+    if (GameState.market.day % 90 === 0) {
+        const baseCycleGrowth = phaseConfig.gdpTarget;
+        const interestRateDrag = GameState.market.macro.interestRate * MACRO_LOGIC.rateDragOnGDP;
+        const gdpNoise = randomGaussian() * MACRO_CONFIG.gdpVolatility;
+        GameState.market.macro.gdpGrowth += ((baseCycleGrowth - interestRateDrag) - GameState.market.macro.gdpGrowth) * 0.5 + gdpNoise;
+    }
 
-    // Step B: Calculate Inflation based on the new GDP and current Interest Rate.
-    const gdpHeat = GameState.market.macro.gdpGrowth * MACRO_LOGIC.gdpHeatOnInf;
-    const interestRateCooling = GameState.market.macro.interestRate * MACRO_LOGIC.rateCoolingOnInf;
-    const inflationNoise = randomGaussian() * 0.005;
-    // Current inflation drifts towards the heat minus cooling, alongside phase target
-    const inflationTarget = (Math.max(0, gdpHeat - interestRateCooling) + phaseConfig.inflationTarget) / 2;
-    GameState.market.macro.inflation += (inflationTarget - GameState.market.macro.inflation) * 0.1 + inflationNoise;
-    GameState.market.macro.inflation = Math.max(0, GameState.market.macro.inflation);
+    // Inflation updates once a month (30 days)
+    if (GameState.market.day % 30 === 0) {
+        const gdpHeat = GameState.market.macro.gdpGrowth * MACRO_LOGIC.gdpHeatOnInf;
+        const interestRateCooling = GameState.market.macro.interestRate * MACRO_LOGIC.rateCoolingOnInf;
+        const inflationNoise = randomGaussian() * 0.005;
+        const inflationTarget = (Math.max(0, gdpHeat - interestRateCooling) + phaseConfig.inflationTarget) / 2;
+        GameState.market.macro.inflation += (inflationTarget - GameState.market.macro.inflation) * 0.5 + inflationNoise;
+        GameState.market.macro.inflation = Math.max(0, GameState.market.macro.inflation);
+    }
 
     // Fear and Greed Index Update
     let fearGreedDrift = 0;
@@ -79,16 +82,32 @@ export const Market = {
     GameState.market.commodities.techCost += (commodityDrift * 0.5) + (randomGaussian() * 0.015);
     GameState.market.commodities.techCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.techCost));
 
-    // Step C: Central Bank Logic (Fed Meeting every 30 ticks)
+    // Step C: Central Bank Logic (Fed Meeting)
+    // Runs when fedMeetingInterval hits, evaluating the "Dual Mandate"
     if (GameState.market.day % MACRO_LOGIC.fedMeetingInterval === 0) {
       const inflationDiff = GameState.market.macro.inflation - MACRO_CONFIG.targetInflation;
-      // Change rates if deviation is > 0.5% (0.005)
-      if (Math.abs(inflationDiff) > 0.005) {
-        if (inflationDiff > 0) {
-          GameState.market.macro.interestRate += 0.0025; // Hike
-        } else {
-          GameState.market.macro.interestRate -= 0.0025; // Cut
-        }
+      const gdpDiff = GameState.market.macro.gdpGrowth - MACRO_CONFIG.targetGdp;
+
+      let rateChange = 0;
+
+      // Dual Mandate evaluation
+      if (inflationDiff > 0.01) {
+          // Inflation is high, prioritize hiking
+          rateChange = 0.0025;
+      } else if (gdpDiff < -0.01) {
+          // GDP is crashing, prioritize cutting
+          rateChange = -0.0025;
+      } else if (inflationDiff > 0.005 && gdpDiff >= 0) {
+          // Economy is okay, but inflation slightly high
+          rateChange = 0.0025;
+      } else if (inflationDiff < -0.005 && gdpDiff < 0) {
+          // Deflation and contraction risk
+          rateChange = -0.0025;
+      }
+
+      if (rateChange !== 0) {
+          GameState.market.macro.interestRate += rateChange;
+          GameState.market.macro.interestRate = Math.max(0, GameState.market.macro.interestRate);
       }
     }
 

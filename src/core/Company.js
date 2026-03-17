@@ -156,7 +156,9 @@ export class Company {
 
     // 1. Gross Revenue Update (Nominal GDP = Real GDP + Inflation) & Commodity Impact
     const nominalGdpGrowth = gdpGrowth + inflation;
-    let dailyRevenueGrowth = (nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01)) / 30;
+
+    // Scale down growth to daily levels (360 financial days in a year)
+    let dailyRevenueGrowth = (nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01)) / 360;
 
     // Apply saturation to positive growth only
     if (dailyRevenueGrowth > 0) {
@@ -175,41 +177,56 @@ export class Company {
       effectiveMargin -= (energyImpact + techImpact) * 0.1; // scale down impact
     }
 
-    // Inflation-Linked Expenses
-    this.fixedCosts *= (1 + (inflation / 30));
+    // Inflation-Linked Expenses scaled daily
+    this.fixedCosts *= (1 + (inflation / 360));
 
-    const operatingIncome = (this.revenue * effectiveMargin) - this.fixedCosts;
+    // Scale operational calculations to daily
+    const dailyRevenue = this.revenue / 360;
+    const dailyFixedCosts = this.fixedCosts / 360;
+
+    const operatingIncome = (dailyRevenue * effectiveMargin) - dailyFixedCosts;
 
     // 2. Interest Expense
     const baseRate = interestRate; // from top
     const spread = CREDIT_RATING_SPREADS[this.creditRating] || 0.025;
     const effectiveInterestRate = baseRate + spread;
-    const interestExpense = this.totalDebt * effectiveInterestRate;
+    const dailyInterestExpense = (this.totalDebt * effectiveInterestRate) / 360;
 
-    this.updateCreditRating(interestExpense, operatingIncome);
+    // Use annualized numbers for rating
+    this.updateCreditRating(dailyInterestExpense * 360, operatingIncome * 360);
 
     // 3. Net Income
-    const netIncomeBeforeTax = operatingIncome - interestExpense;
+    const netIncomeBeforeTax = operatingIncome - dailyInterestExpense;
     const netIncome = netIncomeBeforeTax * (1 - GAME_CONFIG.taxRate);
 
-    this.capitalAllocation(netIncome, baseRate);
+    // Only run automated capital allocations once per quarter (90 days)
+    if (GameState.market.day % 90 === 0) {
+        this.capitalAllocation(netIncome * 90, baseRate); // Provide quarterly income
+    } else {
+        // Decay dividend yield anyway so it doesn't get stuck
+        if (this.dividendYield > 0 && this.strategy !== 'Player Directed (Dividend Forced)') {
+           this.dividendYield *= 0.95;
+           if (this.dividendYield < 0.001) this.dividendYield = 0;
+        }
+    }
 
     // 4. Cash Flow
     this.cashOnHand += netIncome;
 
-    // Bankruptcy Guard
+    // Bankruptcy Guard - Now allowing more ticks to recover since ticks are just 1 day
     if (this.cashOnHand < 0 && this.creditRating === 'Junk') {
       this.negativeCashTicks++;
     } else if (this.cashOnHand > 0) {
       this.negativeCashTicks = 0;
     }
 
-    if (this.negativeCashTicks > 12) {
+    if (this.negativeCashTicks > 30) {
       this.isBankrupt = true;
       return;
     }
     // 5. EPS
-    this.eps = netIncome / this.sharesOutstanding;
+    // Provide annualized EPS estimate instead of daily for better valuation
+    this.eps = (netIncome * 360) / this.sharesOutstanding;
 
     // Manage EPS History for Trailing EPS
     this.epsHistory.push(this.eps);
