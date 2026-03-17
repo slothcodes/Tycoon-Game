@@ -3,6 +3,7 @@ import { randomGaussian } from '../utils/math.js';
 import { EventBus } from './EventBus.js';
 import { MACRO_CONFIG, MACRO_LOGIC, GAME_CONFIG } from '../utils/config.js';
 import { Company } from './Company.js';
+import { Player } from './Player.js';
 
 export const Market = {
   tick() {
@@ -125,21 +126,33 @@ export const Market = {
     GameState.companies = activeCompanies;
 
     // Update player net worth automatically on every tick so holding values are live
-    import('./Player.js').then(module => {
-        module.Player.recalculateNetWorth();
-        if (portfolioChanged) {
-            EventBus.emit('PLAYER_UPDATED', GameState.player);
-        }
-    });
+    Player.recalculateNetWorth();
+    if (portfolioChanged) {
+        EventBus.emit('PLAYER_UPDATED', GameState.player);
+    }
 
     // Handle IPOs
     if (Math.random() < GAME_CONFIG.ipoChancePerTick && GameState.companies.length < GAME_CONFIG.maxCompanies) {
       const sectors = Object.keys(GameState.market.sectors);
       const randomSector = sectors[Math.floor(Math.random() * sectors.length)];
 
+      const prefixes = ["Global", "Apex", "Summit", "Quantum", "Nexus", "Horizon", "Pinnacle", "Aether", "Stellar", "Titan"];
+      const techMid = ["Software", "Systems", "Cybernetics", "Data", "Networks"];
+      const energyMid = ["Power", "Resources", "Petroleum", "Renewables", "Energy"];
+      const retailMid = ["Brands", "Stores", "Mart", "Retail", "Goods"];
+      const suffixes = ["Inc.", "Corp.", "Holdings", "Group", "LLC", "Ltd."];
+
+      let mid = techMid;
+      if (randomSector === 'Energy') mid = energyMid;
+      else if (randomSector === 'Retail') mid = retailMid;
+
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      const middle = mid[Math.floor(Math.random() * mid.length)];
+      const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+
       const newCompanyData = {
         id: `COMP_${randomSector.substring(0,3).toUpperCase()}_${Date.now()}`,
-        name: `New ${randomSector} Corp ${Math.floor(Math.random() * 1000)}`,
+        name: `${prefix} ${middle} ${suffix}`,
         sector: randomSector,
         revenue: Math.random() * 10000000 + 1000000,
         operatingMargin: Math.random() * 0.2 + 0.05,

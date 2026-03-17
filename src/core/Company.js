@@ -138,9 +138,18 @@ export class Company {
     const rateSensitivity = MACRO_CONFIG.sectorSensitivities?.[this.sector]?.rateSensitivity || 1.0;
     const rateDrag = interestRate * rateSensitivity;
 
+    // Diminishing returns: As revenue gets massive, growth naturally slows down (market saturation)
+    const saturationFactor = Math.max(0, 1 - (this.revenue / 10000000000)); // starts slowing at 10B
+
     // 1. Gross Revenue Update (Nominal GDP = Real GDP + Inflation) & Commodity Impact
     const nominalGdpGrowth = gdpGrowth + inflation;
-    const dailyRevenueGrowth = (nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01)) / 30;
+    let dailyRevenueGrowth = (nominalGdpGrowth - rateDrag + (sectorMultiplier * 0.01)) / 30;
+
+    // Apply saturation to positive growth only
+    if (dailyRevenueGrowth > 0) {
+        dailyRevenueGrowth *= saturationFactor;
+    }
+
     this.revenue = this.revenue * (1 + dailyRevenueGrowth);
 
     // Calculate operating margin impact from commodities
@@ -217,6 +226,16 @@ export class Company {
     // Apply Sector and Hype multipliers
     fundamentalPrice *= sectorMultiplier * this.hype;
 
+    // Apply "Selling Pressure" / Valuation Cap
+    // As fundamental price crosses certain high thresholds, it gets heavily compressed
+    const softCap = GAME_CONFIG.softPriceCap || 500;
+    if (fundamentalPrice > softCap) {
+        // Compress everything above the soft cap
+        const excess = fundamentalPrice - softCap;
+        // Use a logarithmic or root function to squash the excess
+        fundamentalPrice = softCap + (Math.sqrt(excess) * 10);
+    }
+
     // Add Price Noise (+/- 0.5% jitter)
     const noise = 1 + (randomGaussian() * GAME_CONFIG.priceNoiseVolatility);
 
@@ -229,5 +248,36 @@ export class Company {
     if (this.priceHistory.length > GAME_CONFIG.maxPriceHistory) {
       this.priceHistory.shift();
     }
+
+    // Check for Stock Split
+    if (this.price > (GAME_CONFIG.stockSplitThreshold || 800)) {
+        this.executeStockSplit();
+    }
+  }
+
+  executeStockSplit() {
+      // 2-for-1 Split
+      const splitRatio = 2;
+
+      this.sharesOutstanding *= splitRatio;
+      this.price /= splitRatio;
+      this.eps /= splitRatio;
+
+      // Adjust history
+      this.epsHistory = this.epsHistory.map(e => e / splitRatio);
+
+      // We must adjust the price history so the chart doesn't look like a crash
+      this.priceHistory = this.priceHistory.map(p => p / splitRatio);
+
+      // Update Player Portfolio
+      if (GameState.player.portfolio[this.id]) {
+          const holding = GameState.player.portfolio[this.id];
+          holding.shares *= splitRatio;
+          holding.averageCost /= splitRatio;
+      }
+
+      EventBus.emit('NEWS_ALERT', `STOCK SPLIT: ${this.name} announces a 2-for-1 stock split!`);
+      // Emit an update event so UI charts redraw immediately
+      EventBus.emit('MARKET_UPDATED', GameState);
   }
 }
