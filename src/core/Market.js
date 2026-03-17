@@ -58,16 +58,21 @@ export const Market = {
 
     // Fear and Greed Index Update
     let fearGreedDrift = 0;
-    if (GameState.market.economicPhase === 'Expansion') fearGreedDrift = 1;
-    else if (GameState.market.economicPhase === 'Contraction') fearGreedDrift = -1;
-    else if (GameState.market.economicPhase === 'Peak') fearGreedDrift = 0.5;
-    else fearGreedDrift = -0.5;
+    if (GameState.market.economicPhase === 'Expansion') {
+      fearGreedDrift = 1;
+    } else if (GameState.market.economicPhase === 'Contraction') {
+      fearGreedDrift = -1;
+    } else if (GameState.market.economicPhase === 'Peak') {
+      fearGreedDrift = 0.5;
+    } else {
+      fearGreedDrift = -0.5;
+    }
 
     fearGreedDrift += randomGaussian() * 2;
     GameState.market.fearAndGreed = Math.max(0, Math.min(100, GameState.market.fearAndGreed + fearGreedDrift));
 
     // Commodities Update
-    const commodityDrift = (GameState.market.economicPhase === 'Expansion' || GameState.market.economicPhase === 'Peak') ? 0.01 : -0.01;
+    let commodityDrift = (GameState.market.economicPhase === 'Expansion' || GameState.market.economicPhase === 'Peak') ? 0.01 : -0.01;
     GameState.market.commodities.energyCost += commodityDrift + (randomGaussian() * 0.02);
     GameState.market.commodities.energyCost = Math.max(0.5, Math.min(2.0, GameState.market.commodities.energyCost));
 

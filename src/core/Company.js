@@ -46,9 +46,11 @@ export class Company {
   }
 
   capitalAllocation(netIncome, macroRate) {
-    // Only reset dividendYield if the player hasn't just forced one this tick
-    if (this.strategy !== 'Player Directed (Dividend Forced)') {
-      this.dividendYield = 0;
+    // Decay dividend yield so it's visible in UI, rather than instant reset
+    if (this.dividendYield > 0 && this.strategy !== 'Player Directed (Dividend Forced)') {
+       // Decay by a small amount each tick, eventually resetting to 0
+       this.dividendYield *= 0.95;
+       if (this.dividendYield < 0.001) this.dividendYield = 0;
     }
 
     if (this.isPlayerControlled) {
@@ -75,30 +77,41 @@ export class Company {
         this.totalDebt -= paydown;
         this.cashOnHand -= paydown;
       }
-    } else if (this.cashOnHand > this.revenue * 0.5) {
-      // High cash reserves
-      if (GameState.market.economicPhase === 'Expansion' || GameState.market.economicPhase === 'Peak') {
+    } else if (this.cashOnHand > this.revenue * 0.3) {
+      // Moderate/High cash reserves
+
+      const inGrowthPhase = GameState.market.economicPhase === 'Expansion' || GameState.market.economicPhase === 'Peak';
+
+      // If in growth phase, mostly invest in CapEx, but mature companies might still pay dividends
+      // If in contraction phase, mostly return capital, but maybe some conservative growth
+      const returnCapitalChance = inGrowthPhase ? 0.2 : 0.8;
+
+      if (Math.random() > returnCapitalChance) {
         this.strategy = 'Aggressive Growth (CapEx)';
         // Invest in growth
         const investment = this.cashOnHand * 0.3;
         this.cashOnHand -= investment;
-        this.fixedCosts += investment * 0.05; // CapEx increases fixed costs slightly
-        this.revenue *= 1.05; // Immediate bump to future revenue capacity
+        this.fixedCosts += investment * 0.05;
+        this.revenue *= 1.05;
 
-        // Maybe issue cheap debt to fund more growth if rating is good
         if (macroRate < 0.04 && (this.creditRating === 'AAA' || this.creditRating === 'AA')) {
             const newDebt = this.revenue * 0.2;
             this.totalDebt += newDebt;
             this.cashOnHand += newDebt;
         }
       } else {
-        // Contraction/Trough: Return capital to shareholders
+        // Return capital to shareholders
         if (Math.random() > 0.5) {
           this.strategy = 'Returning Capital (Dividends)';
           const dividendPool = this.cashOnHand * 0.2;
           this.cashOnHand -= dividendPool;
           const dps = dividendPool / this.sharesOutstanding;
-          this.dividendYield = (dps / this.price) * 100; // Annualized proxy
+
+          // Set yield, but only if it's noticeably higher than current decaying yield
+          const newYield = (dps / this.price) * 100;
+          if (newYield > this.dividendYield) {
+              this.dividendYield = newYield;
+          }
 
           // Pay player
           if (GameState.player.portfolio[this.id]) {
