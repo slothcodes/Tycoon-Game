@@ -16,12 +16,18 @@ export const Toast = {
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
+
+    // Add icon based on type
+    let icon = '<i class="fa-solid fa-circle-info" style="color: var(--accent-color);"></i>';
+    if (type === 'error') icon = '<i class="fa-solid fa-circle-exclamation" style="color: var(--negative-color);"></i>';
+    if (type === 'success') icon = '<i class="fa-solid fa-circle-check" style="color: var(--positive-color);"></i>';
+
+    toast.innerHTML = `${icon} <span>${message}</span>`;
 
     this.container.appendChild(toast);
 
     setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease-in forwards';
+      toast.style.animation = 'slideOutRight 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards';
       setTimeout(() => {
         if (this.container.contains(toast)) {
           this.container.removeChild(toast);
@@ -34,9 +40,9 @@ export const Toast = {
 // Add slideOut animation to style.css dynamically if not present
 const style = document.createElement('style');
 style.innerHTML = `
-  @keyframes slideOut {
+  @keyframes slideOutRight {
     from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(120%); opacity: 0; }
   }
 `;
 document.head.appendChild(style);

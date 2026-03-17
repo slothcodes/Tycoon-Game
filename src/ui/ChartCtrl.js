@@ -25,11 +25,12 @@ export class ChartCtrl {
         datasets: [{
           label: 'Price',
           data: [],
-          borderColor: '#F5A623',
-          borderWidth: 2,
+          borderColor: '#00f2ff',
+          borderWidth: 3,
           pointRadius: 0,
-          fill: false,
-          tension: 0.1
+          fill: true,
+          tension: 0.1,
+          spanGaps: true
         }]
       },
       options: {
@@ -41,11 +42,13 @@ export class ChartCtrl {
           tooltip: {
             mode: 'index',
             intersect: false,
-            backgroundColor: '#131722',
-            titleColor: '#A0AEC0',
-            bodyColor: '#FFFFFF',
-            borderColor: '#2D3748',
-            borderWidth: 1
+            backgroundColor: 'rgba(20, 26, 38, 0.9)',
+            titleColor: '#94a3b8',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false
           }
         },
         scales: {
@@ -53,9 +56,13 @@ export class ChartCtrl {
           y: {
             display: true,
             position: 'right',
-            grid: { color: '#2D3748', drawBorder: false },
+            grid: {
+              color: (context) => context.tick.value === 0 ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+              drawBorder: false
+            },
             ticks: {
-              color: '#A0AEC0',
+              color: '#94a3b8',
+              font: { family: "'JetBrains Mono', monospace", size: 11 },
               callback: (value) => '$' + value.toFixed(2)
             }
           }
@@ -80,11 +87,19 @@ export class ChartCtrl {
     this.chart.data.labels = history.map((_, i) => i);
     this.chart.data.datasets[0].data = history;
 
-    // Color logic: green if current price >= start price, else red
+    // Color logic: neon emerald if current price >= start price, else vivid crimson
     const startPrice = history[0];
     const currentPrice = history[history.length - 1];
-    const color = currentPrice >= startPrice ? '#00FF00' : '#FF0000';
-    this.chart.data.datasets[0].borderColor = color;
+    const hexColor = currentPrice >= startPrice ? '#00ff88' : '#ff3366';
+    const rgbColor = currentPrice >= startPrice ? '0, 255, 136' : '255, 51, 102';
+
+    this.chart.data.datasets[0].borderColor = hexColor;
+
+    // Create Gradient Fill
+    let gradient = this.ctx.createLinearGradient(0, 0, 0, 350);
+    gradient.addColorStop(0, `rgba(${rgbColor}, 0.3)`);
+    gradient.addColorStop(1, `rgba(${rgbColor}, 0.0)`);
+    this.chart.data.datasets[0].backgroundColor = gradient;
 
     this.chart.update();
   }
