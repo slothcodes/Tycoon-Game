@@ -108,9 +108,22 @@
           </div>
 
           <div id="boardroom-menu" class="hidden mt-4">
-            <h3>Boardroom Menu (Player Controlled)</h3>
-            <button id="issue-dividend-btn" disabled>Issue Dividend (WIP)</button>
-            <button id="stock-buyback-btn" disabled>Stock Buyback (WIP)</button>
+            <h3><i class="fa-solid fa-users-gear"></i> Boardroom Menu (Controlling Owner)</h3>
+            <div class="boardroom-controls">
+              <div class="boardroom-col">
+                <h4>Capital Allocation</h4>
+                <button id="issue-dividend-btn" disabled><i class="fa-solid fa-money-bill-transfer"></i> Issue Dividend</button>
+                <button id="stock-buyback-btn" disabled><i class="fa-solid fa-arrow-right-arrow-left"></i> Stock Buyback</button>
+                <button id="issue-shares-btn" disabled><i class="fa-solid fa-arrow-trend-down"></i> Issue Shares (Dilute)</button>
+              </div>
+              <div class="boardroom-col">
+                <h4>Debt & Ops</h4>
+                <button id="issue-debt-btn" disabled><i class="fa-solid fa-file-invoice-dollar"></i> Issue Corp Debt</button>
+                <button id="paydown-debt-btn" disabled><i class="fa-solid fa-hand-holding-dollar"></i> Pay Down Debt</button>
+                <button id="invest-rnd-btn" disabled><i class="fa-solid fa-flask"></i> Invest in R&D</button>
+                <button id="restructure-btn" disabled><i class="fa-solid fa-scissors"></i> Restructure (Cut Costs)</button>
+              </div>
+            </div>
           </div>
         </section>
 

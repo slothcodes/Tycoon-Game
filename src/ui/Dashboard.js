@@ -44,6 +44,11 @@ export const Dashboard = {
 
     this.elements.issueDividendBtn = document.getElementById('issue-dividend-btn');
     this.elements.stockBuybackBtn = document.getElementById('stock-buyback-btn');
+    this.elements.issueSharesBtn = document.getElementById('issue-shares-btn');
+    this.elements.issueDebtBtn = document.getElementById('issue-debt-btn');
+    this.elements.paydownDebtBtn = document.getElementById('paydown-debt-btn');
+    this.elements.investRndBtn = document.getElementById('invest-rnd-btn');
+    this.elements.restructureBtn = document.getElementById('restructure-btn');
 
     // Select first company by default
     if (GameState.companies.length > 0) {
@@ -72,6 +77,56 @@ export const Dashboard = {
             if (input !== null) {
                 const amount = parseInt(input.replace(/,/g, ''), 10);
                 Player.stockBuyback(this.selectedCompanyId, amount);
+            }
+        }
+    });
+
+    this.elements.issueSharesBtn.addEventListener('click', () => {
+        const input = prompt('Enter percentage of shares to issue/dilute (1-50):', '10');
+        if (input !== null) {
+            const percentage = parseInt(input, 10);
+            Player.issueShares(this.selectedCompanyId, percentage);
+        }
+    });
+
+    this.elements.issueDebtBtn.addEventListener('click', () => {
+        const company = GameState.companies.find(c => c.id === this.selectedCompanyId);
+        if (company) {
+            const input = prompt('Enter amount of corporate debt to issue:', '5000000');
+            if (input !== null) {
+                const amount = parseInt(input.replace(/,/g, ''), 10);
+                Player.issueDebt(this.selectedCompanyId, amount);
+            }
+        }
+    });
+
+    this.elements.paydownDebtBtn.addEventListener('click', () => {
+        const company = GameState.companies.find(c => c.id === this.selectedCompanyId);
+        if (company) {
+            const input = prompt(`Enter amount of debt to pay down (Max: $${Math.floor(company.cashOnHand).toLocaleString()}):`, '1000000');
+            if (input !== null) {
+                const amount = parseInt(input.replace(/,/g, ''), 10);
+                Player.payDownDebt(this.selectedCompanyId, amount);
+            }
+        }
+    });
+
+    this.elements.investRndBtn.addEventListener('click', () => {
+        const company = GameState.companies.find(c => c.id === this.selectedCompanyId);
+        if (company) {
+            const cost = Math.floor(company.cashOnHand * 0.20);
+            if (confirm(`Launch R&D Campaign? This will consume $${cost.toLocaleString()} cash for a permanent revenue boost.`)) {
+                Player.investRnD(this.selectedCompanyId);
+            }
+        }
+    });
+
+    this.elements.restructureBtn.addEventListener('click', () => {
+        const company = GameState.companies.find(c => c.id === this.selectedCompanyId);
+        if (company) {
+            const cost = Math.floor(company.revenue * 0.10);
+            if (confirm(`Execute Corporate Restructuring? This will cost $${cost.toLocaleString()} in severance but permanently reduce fixed costs. Expect a PR hit.`)) {
+                Player.restructure(this.selectedCompanyId);
             }
         }
     });
@@ -284,12 +339,20 @@ export const Dashboard = {
       this.elements.boardroomMenu.classList.remove('hidden');
       this.elements.issueDividendBtn.disabled = false;
       this.elements.stockBuybackBtn.disabled = false;
-      this.elements.issueDividendBtn.textContent = 'Issue Special Dividend';
-      this.elements.stockBuybackBtn.textContent = 'Authorize Share Buyback';
+      this.elements.issueSharesBtn.disabled = false;
+      this.elements.issueDebtBtn.disabled = false;
+      this.elements.paydownDebtBtn.disabled = false;
+      this.elements.investRndBtn.disabled = false;
+      this.elements.restructureBtn.disabled = false;
     } else {
       this.elements.boardroomMenu.classList.add('hidden');
       this.elements.issueDividendBtn.disabled = true;
       this.elements.stockBuybackBtn.disabled = true;
+      this.elements.issueSharesBtn.disabled = true;
+      this.elements.issueDebtBtn.disabled = true;
+      this.elements.paydownDebtBtn.disabled = true;
+      this.elements.investRndBtn.disabled = true;
+      this.elements.restructureBtn.disabled = true;
     }
   }
 };

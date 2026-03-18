@@ -101,6 +101,16 @@ function init() {
   if (!hasSave) {
     // Instantiate seed data
     GameState.companies = SEED_COMPANIES.map(data => new Company(data));
+
+    // Founder Origin: Give player controlling stake in the first company
+    const firstCompany = GameState.companies[0];
+    const controllingShares = Math.floor(firstCompany.sharesOutstanding * 0.51) + 1;
+    GameState.player.portfolio[firstCompany.id] = {
+        shares: controllingShares,
+        averageCost: firstCompany.price // Foundational valuation
+    };
+    firstCompany.isPlayerControlled = true;
+
   } else {
     // Rehydrate objects
     GameState.companies = GameState.companies.map(data => {
