@@ -157,15 +157,72 @@ export const Market = {
     GameState.market.globalSentiment += drift + shock;
     GameState.market.globalSentiment = Math.max(0.3, Math.min(1.8, GameState.market.globalSentiment));
 
+    // Process Active Catalysts
+    if (!GameState.market.catalysts) GameState.market.catalysts = [];
+    const activeCatalysts = [];
+
+    for (const cat of GameState.market.catalysts) {
+        cat.ticksRemaining -= 1;
+        if (cat.ticksRemaining > 0) {
+            activeCatalysts.push(cat);
+        }
+    }
+    GameState.market.catalysts = activeCatalysts;
+
     // Sector-specific updates
     for (const sector in GameState.market.sectors) {
       const s = GameState.market.sectors[sector];
+
+      // Calculate sum of active catalyst shocks for this sector
+      let catalystShockSum = 0;
+      for (const cat of GameState.market.catalysts) {
+          if (cat.sector === sector) {
+              catalystShockSum += cat.shockValue;
+          }
+      }
+
       // Base drift depends on Fear & Greed somewhat
       const sentimentTarget = 0.5 + (GameState.market.fearAndGreed / 100);
       const sectorDrift = (sentimentTarget - s.multiplier) * 0.02;
       const sectorShock = randomGaussian() * s.volatility * 0.1;
-      s.multiplier += sectorDrift + sectorShock;
-      s.multiplier = Math.max(0.5, Math.min(2.0, s.multiplier));
+
+      s.multiplier += sectorDrift + sectorShock + catalystShockSum;
+      s.multiplier = Math.max(0.5, Math.min(2.5, s.multiplier)); // Increased max bound to allow for catalyst booms
+    }
+
+    // Procedural Catalyst Generator (5% chance per tick)
+    if (Math.random() < 0.05) {
+        const sectors = Object.keys(GameState.market.sectors);
+        const randomSector = sectors[Math.floor(Math.random() * sectors.length)];
+        const isPositive = Math.random() > 0.5;
+
+        const shockValue = isPositive ? 0.05 : -0.05; // Distributed over the lifespan, this is significant
+
+        const headlines = {
+            Tech: {
+                pos: ["Tech sector booms on breakthrough AI algorithms", "Semiconductor shortage ends, Tech rallies", "Major government subsidies announced for Tech"],
+                neg: ["Tech sector faces strict new regulatory fines", "Massive data breach hits top Tech firms", "Consumer demand for new Tech plummets"]
+            },
+            Energy: {
+                pos: ["Energy sector surges on new oil discoveries", "Favorable legislation boosts Energy profits", "Global demand for Energy hits record highs"],
+                neg: ["Energy sector slumps amid new carbon taxes", "Pipeline leak causes massive fines for Energy sector", "Alternative renewables crash traditional Energy markets"]
+            },
+            Retail: {
+                pos: ["Retail spending hits all-time high this quarter", "Supply chain issues resolved, Retail rejoices", "Consumer confidence boosts Retail sector"],
+                neg: ["Retail sales plummet amid inflation fears", "Major shipping delays cripple Retail inventory", "E-commerce giants crush traditional Retail margins"]
+            }
+        };
+
+        const headlinePool = isPositive ? headlines[randomSector].pos : headlines[randomSector].neg;
+        const headline = headlinePool[Math.floor(Math.random() * headlinePool.length)];
+
+        GameState.market.catalysts.push({
+            sector: randomSector,
+            shockValue: shockValue,
+            ticksRemaining: 20
+        });
+
+        EventBus.emit('NEWS_ALERT', `CATALYST: ${headline}`);
     }
 
     // Tick all companies

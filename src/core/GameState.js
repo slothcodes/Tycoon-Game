@@ -33,7 +33,8 @@ export const GameState = {
       Tech: { multiplier: 1.2, volatility: 0.05, pe: 25 },
       Energy: { multiplier: 0.8, volatility: 0.08, pe: 10 },
       Retail: { multiplier: 1.0, volatility: 0.03, pe: 15 }
-    }
+    },
+    catalysts: []
   },
   rivals: [
     { id: 'rival_1', name: 'Vanguard Group', cash: 50000000, portfolio: {} },

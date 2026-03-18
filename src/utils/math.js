@@ -25,3 +25,24 @@ export function randomGaussian() {
   while (v === 0) v = Math.random();
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
+
+export function animateValue(element, start, end, duration) {
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+
+    // Ease-out logic
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    const currentVal = start + (end - start) * easeProgress;
+
+    element.textContent = formatCurrency(currentVal);
+
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    } else {
+      element.textContent = formatCurrency(end); // Ensure exact final value
+    }
+  };
+  window.requestAnimationFrame(step);
+}

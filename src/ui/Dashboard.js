@@ -1,12 +1,14 @@
 import { GameState } from '../core/GameState.js';
 import { Player } from '../core/Player.js';
 import { EventBus } from '../core/EventBus.js';
-import { formatCurrency, formatLargeNumber, formatPercent } from '../utils/math.js';
+import { formatCurrency, formatLargeNumber, formatPercent, animateValue } from '../utils/math.js';
 import { GAME_CONFIG } from '../utils/config.js';
 
 export const Dashboard = {
   selectedCompanyId: null,
   elements: {},
+  sortCol: 'marketCap',
+  sortDir: 'desc',
 
   init() {
     this.elements = {
@@ -14,7 +16,7 @@ export const Dashboard = {
       netWorth: document.getElementById('player-networth'),
       marketDay: document.getElementById('market-day'),
       portfolioList: document.getElementById('portfolio-list'),
-      companySelect: document.getElementById('company-select'),
+      marketTableBody: document.getElementById('market-table-body'),
       selectedName: document.getElementById('selected-company-name'),
       selectedPrice: document.getElementById('selected-company-price'),
       selectedSector: document.getElementById('selected-company-sector'),
@@ -40,7 +42,7 @@ export const Dashboard = {
       playerDividends: document.getElementById('player-dividends')
     };
 
-    this.populateCompanySelect();
+    this.populateMarketTable();
 
     this.elements.issueDividendBtn = document.getElementById('issue-dividend-btn');
     this.elements.stockBuybackBtn = document.getElementById('stock-buyback-btn');
@@ -61,8 +63,31 @@ export const Dashboard = {
     }
 
     // Bind UI Events
-    this.elements.companySelect.addEventListener('change', (e) => {
-      this.selectCompany(e.target.value);
+    document.querySelectorAll('.market-table th[data-sort]').forEach(th => {
+      th.addEventListener('click', (e) => {
+        const col = e.currentTarget.getAttribute('data-sort');
+        if (this.sortCol === col) {
+           this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+           this.sortCol = col;
+           this.sortDir = 'desc';
+        }
+
+        // Update header icons
+        document.querySelectorAll('.market-table th i').forEach(i => i.className = 'fa-solid fa-sort');
+        const icon = this.sortDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+        e.currentTarget.querySelector('i').className = `fa-solid ${icon}`;
+
+        this.populateMarketTable();
+      });
+    });
+
+    // Use event delegation for table rows
+    this.elements.marketTableBody.addEventListener('click', (e) => {
+       const tr = e.target.closest('tr');
+       if (tr) {
+           this.selectCompany(tr.dataset.id);
+       }
     });
 
     this.elements.issueDividendBtn.addEventListener('click', () => {
@@ -179,7 +204,7 @@ export const Dashboard = {
     // Handle IPOs and Bankruptcies UI updates
     EventBus.on('NEWS_ALERT', (msg) => {
       if (msg.startsWith('IPO:') || msg.startsWith('BANKRUPTCY:')) {
-        this.populateCompanySelect();
+        this.populateMarketTable();
         // If the selected company went bankrupt, select the first available one
         if (!GameState.companies.find(c => c.id === this.selectedCompanyId)) {
           if (GameState.companies.length > 0) {
@@ -188,9 +213,6 @@ export const Dashboard = {
              this.selectedCompanyId = null;
              this.updateCompanyDetails();
           }
-        } else {
-            // Re-select the current one to ensure the dropdown shows the right value
-            this.elements.companySelect.value = this.selectedCompanyId;
         }
       }
     });
@@ -218,15 +240,57 @@ export const Dashboard = {
     }, 1000);
   },
 
-  populateCompanySelect() {
-    this.elements.companySelect.innerHTML = GameState.companies.map(c =>
-      `<option value="${c.id}">${c.name}</option>`
-    ).join('');
+  populateMarketTable() {
+    const companies = [...GameState.companies];
+
+    // Sort logic
+    companies.sort((a, b) => {
+        let valA, valB;
+        if (this.sortCol === 'name') { valA = a.name; valB = b.name; }
+        else if (this.sortCol === 'price') { valA = a.price; valB = b.price; }
+        else if (this.sortCol === 'change') {
+            const aOld = a.priceHistory[a.priceHistory.length - 2] || a.price;
+            valA = (a.price - aOld) / aOld;
+            const bOld = b.priceHistory[b.priceHistory.length - 2] || b.price;
+            valB = (b.price - bOld) / bOld;
+        }
+        else if (this.sortCol === 'pe') { valA = a.price / Math.max(a.eps, 0.01); valB = b.price / Math.max(b.eps, 0.01); }
+        else if (this.sortCol === 'marketCap') { valA = a.price * a.sharesOutstanding; valB = b.price * b.sharesOutstanding; }
+
+        if (valA < valB) return this.sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return this.sortDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    this.elements.marketTableBody.innerHTML = companies.map(c => {
+        const oldPrice = c.priceHistory[c.priceHistory.length - 2] || c.price;
+        const change = (c.price - oldPrice) / oldPrice;
+        const changeClass = change >= 0 ? 'color: var(--positive-color)' : 'color: var(--negative-color)';
+        const pe = c.price / Math.max(c.eps, 0.01);
+        const marketCap = c.price * c.sharesOutstanding;
+        const isSelected = c.id === this.selectedCompanyId ? 'selected-row' : '';
+
+        return `
+          <tr data-id="${c.id}" class="${isSelected}">
+            <td>${c.id.split('_')[1]}-${c.name.split(' ')[0]}</td>
+            <td style="font-family: 'JetBrains Mono', monospace">${formatCurrency(c.price)}</td>
+            <td style="${changeClass}; font-family: 'JetBrains Mono', monospace">${formatPercent(change)}</td>
+            <td style="font-family: 'JetBrains Mono', monospace">${pe.toFixed(1)}</td>
+            <td style="font-family: 'JetBrains Mono', monospace">${formatLargeNumber(marketCap)}</td>
+          </tr>
+        `;
+    }).join('');
   },
 
   selectCompany(companyId) {
     this.selectedCompanyId = companyId;
-    this.elements.companySelect.value = companyId;
+
+    // Update active row class
+    document.querySelectorAll('#market-table-body tr').forEach(tr => {
+        if (tr.dataset.id === companyId) tr.classList.add('selected-row');
+        else tr.classList.remove('selected-row');
+    });
+
     EventBus.emit('COMPANY_SELECTED', companyId);
     this.updateCompanyDetails();
   },
@@ -250,32 +314,41 @@ export const Dashboard = {
       this.elements.macroGdp.textContent = formatPercent(macro ? macro.gdpGrowth : 0);
     }
 
+    this.populateMarketTable();
     this.updatePlayerPanel();
     this.updateCompanyDetails();
   },
 
   updatePlayerPanel() {
-    const oldCash = this.elements.cash.textContent;
-    const oldNetWorth = this.elements.netWorth.textContent;
+    const oldCashStr = this.elements.cash.textContent.replace(/[^0-9.-]+/g,"");
+    const oldNetWorthStr = this.elements.netWorth.textContent.replace(/[^0-9.-]+/g,"");
 
-    const newCash = formatCurrency(GameState.player.cash);
-    const newNetWorth = formatCurrency(GameState.player.netWorth);
+    const oldCash = parseFloat(oldCashStr) || GameState.player.cash;
+    const oldNetWorth = parseFloat(oldNetWorthStr) || GameState.player.netWorth;
 
-    this.elements.cash.textContent = newCash;
-    this.elements.netWorth.textContent = newNetWorth;
-    this.elements.playerDividends.textContent = formatCurrency(GameState.player.totalDividends || 0);
+    const newCash = GameState.player.cash;
+    const newNetWorth = GameState.player.netWorth;
 
-    // Flash animation on change
-    if (oldCash !== newCash) {
+    // Only animate if there's a significant change to prevent micro-jitters
+    if (Math.abs(oldCash - newCash) > 1) {
+        animateValue(this.elements.cash, oldCash, newCash, 800);
         this.elements.cash.classList.remove('flash-update');
         void this.elements.cash.offsetWidth; // trigger reflow
         this.elements.cash.classList.add('flash-update');
+    } else {
+        this.elements.cash.textContent = formatCurrency(newCash);
     }
-    if (oldNetWorth !== newNetWorth) {
+
+    if (Math.abs(oldNetWorth - newNetWorth) > 1) {
+        animateValue(this.elements.netWorth, oldNetWorth, newNetWorth, 800);
         this.elements.netWorth.classList.remove('flash-update');
         void this.elements.netWorth.offsetWidth;
         this.elements.netWorth.classList.add('flash-update');
+    } else {
+        this.elements.netWorth.textContent = formatCurrency(newNetWorth);
     }
+
+    this.elements.playerDividends.textContent = formatCurrency(GameState.player.totalDividends || 0);
 
     // Render portfolio
     const portfolioHtml = Object.entries(GameState.player.portfolio).map(([compId, holding]) => {
@@ -288,7 +361,7 @@ export const Dashboard = {
 
       return `
         <li class="portfolio-item">
-          <div style="font-weight: 600; cursor: pointer; display: flex; align-items: center;" onclick="document.getElementById('company-select').value='${compId}'; document.getElementById('company-select').dispatchEvent(new Event('change'))">
+          <div style="font-weight: 600; cursor: pointer; display: flex; align-items: center;" onclick="document.querySelector('#market-table-body tr[data-id=\\'${compId}\\']').click()">
              <span class="status-indicator ${indicatorClass}"></span> ${comp.name}
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 4px;">
