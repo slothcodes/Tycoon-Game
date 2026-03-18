@@ -367,6 +367,32 @@ span[id^="player-"], span[id^="macro-"], span[id^="selected-"], .ticker-content,
   animation: flashUpdate 0.5s ease-out;
 }
 
+/* Floating Numbers */
+@keyframes floatUpFade {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+.floating-number {
+  position: absolute;
+  pointer-events: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+  font-size: 1.2rem;
+  z-index: 100;
+  animation: floatUpFade 1s ease-out forwards;
+}
+
+.floating-number.green {
+  color: var(--positive-color);
+  text-shadow: 0 0 8px var(--positive-color);
+}
+
+.floating-number.red {
+  color: var(--negative-color);
+  text-shadow: 0 0 8px var(--negative-color);
+}
+
 /* Toast */
 #toast-container {
   position: fixed;

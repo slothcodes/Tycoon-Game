@@ -4,6 +4,7 @@ import { EventBus } from './EventBus.js';
 import { MACRO_CONFIG, MACRO_LOGIC, GAME_CONFIG } from '../utils/config.js';
 import { Company } from './Company.js';
 import { Player } from './Player.js';
+import { Rivals } from './Rivals.js';
 
 export const Market = {
   tick() {
@@ -21,9 +22,29 @@ export const Market = {
 
     if (!GameState.market.economicPhase) {
       GameState.market.economicPhase = 'Expansion';
+      GameState.market.marketRegime = 'Bull';
       GameState.market.phaseTicksRemaining = 50;
       GameState.market.fearAndGreed = 50;
       GameState.market.commodities = { energyCost: 1.0, techCost: 1.0 };
+    }
+
+    // Regime Transitions (Markov Chain style)
+    if (Math.random() < 0.02) {
+       const regimes = ['Bull', 'Bear', 'Stagnant', 'Crisis'];
+       const currentRegime = GameState.market.marketRegime || 'Stagnant';
+       let nextRegime = currentRegime;
+
+       // Simple transition logic
+       if (currentRegime === 'Bull' && Math.random() > 0.7) nextRegime = 'Bear';
+       else if (currentRegime === 'Bear' && Math.random() > 0.6) nextRegime = 'Stagnant';
+       else if (currentRegime === 'Stagnant' && Math.random() > 0.5) nextRegime = 'Bull';
+       else if (currentRegime !== 'Crisis' && Math.random() > 0.95) nextRegime = 'Crisis';
+       else if (currentRegime === 'Crisis' && Math.random() > 0.2) nextRegime = 'Bear';
+
+       if (nextRegime !== currentRegime) {
+           GameState.market.marketRegime = nextRegime;
+           EventBus.emit('NEWS_ALERT', `MARKET REGIME SHIFT: The market has entered a ${nextRegime} phase.`);
+       }
     }
 
     // Phase Transitions
@@ -43,9 +64,19 @@ export const Market = {
 
     // GDP updates once a quarter (90 days)
     if (GameState.market.day % 90 === 0) {
-        const baseCycleGrowth = phaseConfig.gdpTarget;
+        let baseCycleGrowth = phaseConfig.gdpTarget;
+
+        // Regime modifiers on GDP
+        if (GameState.market.marketRegime === 'Bull') baseCycleGrowth += 0.02;
+        else if (GameState.market.marketRegime === 'Bear') baseCycleGrowth -= 0.02;
+        else if (GameState.market.marketRegime === 'Crisis') baseCycleGrowth -= 0.06;
+
         const interestRateDrag = GameState.market.macro.interestRate * MACRO_LOGIC.rateDragOnGDP;
-        const gdpNoise = randomGaussian() * MACRO_CONFIG.gdpVolatility;
+
+        let gdpVol = MACRO_CONFIG.gdpVolatility;
+        if (GameState.market.marketRegime === 'Crisis') gdpVol *= 3;
+
+        const gdpNoise = randomGaussian() * gdpVol;
         GameState.market.macro.gdpGrowth += ((baseCycleGrowth - interestRateDrag) - GameState.market.macro.gdpGrowth) * 0.5 + gdpNoise;
     }
 
@@ -114,11 +145,17 @@ export const Market = {
     // Ensure bounds for interest rate
     GameState.market.macro.interestRate = Math.max(0, GameState.market.macro.interestRate);
 
-    // Global sentiment drift (slowly mean-reverting)
-    const drift = (1.0 - GameState.market.globalSentiment) * 0.05;
-    const shock = randomGaussian() * 0.02; // Global volatility
+    // Global sentiment drift driven by Regime
+    let sentimentTarget = 1.0;
+    let shockVol = 0.02;
+    if (GameState.market.marketRegime === 'Bull') sentimentTarget = 1.2;
+    else if (GameState.market.marketRegime === 'Bear') sentimentTarget = 0.8;
+    else if (GameState.market.marketRegime === 'Crisis') { sentimentTarget = 0.5; shockVol = 0.1; }
+
+    const drift = (sentimentTarget - GameState.market.globalSentiment) * 0.05;
+    const shock = randomGaussian() * shockVol;
     GameState.market.globalSentiment += drift + shock;
-    GameState.market.globalSentiment = Math.max(0.5, Math.min(1.5, GameState.market.globalSentiment));
+    GameState.market.globalSentiment = Math.max(0.3, Math.min(1.8, GameState.market.globalSentiment));
 
     // Sector-specific updates
     for (const sector in GameState.market.sectors) {
@@ -148,6 +185,9 @@ export const Market = {
       }
     });
     GameState.companies = activeCompanies;
+
+    // Run Rivals
+    Rivals.tick();
 
     // Update player net worth automatically on every tick so holding values are live
     Player.recalculateNetWorth();
