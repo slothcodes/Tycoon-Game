@@ -150,9 +150,27 @@ export const Dashboard = {
   },
 
   updatePlayerPanel() {
-    this.elements.cash.textContent = formatCurrency(GameState.player.cash);
-    this.elements.netWorth.textContent = formatCurrency(GameState.player.netWorth);
+    const oldCash = this.elements.cash.textContent;
+    const oldNetWorth = this.elements.netWorth.textContent;
+
+    const newCash = formatCurrency(GameState.player.cash);
+    const newNetWorth = formatCurrency(GameState.player.netWorth);
+
+    this.elements.cash.textContent = newCash;
+    this.elements.netWorth.textContent = newNetWorth;
     this.elements.playerDividends.textContent = formatCurrency(GameState.player.totalDividends || 0);
+
+    // Flash animation on change
+    if (oldCash !== newCash) {
+        this.elements.cash.classList.remove('flash-update');
+        void this.elements.cash.offsetWidth; // trigger reflow
+        this.elements.cash.classList.add('flash-update');
+    }
+    if (oldNetWorth !== newNetWorth) {
+        this.elements.netWorth.classList.remove('flash-update');
+        void this.elements.netWorth.offsetWidth;
+        this.elements.netWorth.classList.add('flash-update');
+    }
 
     // Render portfolio
     const portfolioHtml = Object.entries(GameState.player.portfolio).map(([compId, holding]) => {
@@ -161,22 +179,25 @@ export const Dashboard = {
       const value = holding.shares * comp.price;
       const profit = value - (holding.shares * holding.averageCost);
       const colorClass = profit >= 0 ? 'color: var(--positive-color)' : 'color: var(--negative-color)';
+      const indicatorClass = profit >= 0 ? 'bull' : 'bear';
 
       return `
         <li class="portfolio-item">
-          <div style="font-weight: bold; cursor: pointer;" onclick="document.getElementById('company-select').value='${compId}'; document.getElementById('company-select').dispatchEvent(new Event('change'))">${comp.name}</div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>${holding.shares} shrs</span>
-            <span>${formatCurrency(value)}</span>
+          <div style="font-weight: 600; cursor: pointer; display: flex; align-items: center;" onclick="document.getElementById('company-select').value='${compId}'; document.getElementById('company-select').dispatchEvent(new Event('change'))">
+             <span class="status-indicator ${indicatorClass}"></span> ${comp.name}
           </div>
-          <div style="font-size: 0.8em; ${colorClass}">
-            Avg Cost: ${formatCurrency(holding.averageCost)} | P/L: ${formatCurrency(profit)}
+          <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+            <span style="color: var(--text-secondary);">${holding.shares.toLocaleString()} shrs</span>
+            <span style="font-family: 'JetBrains Mono', monospace;">${formatCurrency(value)}</span>
+          </div>
+          <div style="font-size: 0.8em; margin-top: 4px; ${colorClass}">
+            Avg: ${formatCurrency(holding.averageCost)} | P/L: ${formatCurrency(profit)}
           </div>
         </li>
       `;
     }).join('');
 
-    this.elements.portfolioList.innerHTML = portfolioHtml || '<li>No active positions</li>';
+    this.elements.portfolioList.innerHTML = portfolioHtml || '<li style="color: var(--text-secondary); text-align: center; padding: 1rem;">No active positions</li>';
   },
 
   updateCompanyDetails() {

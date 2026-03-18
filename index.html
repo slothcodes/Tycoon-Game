@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Boardroom Tycoon Engine</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
@@ -48,21 +49,21 @@
       <main class="dashboard-grid">
         <!-- Sidebar: Player Info -->
         <aside class="panel player-panel">
-          <h2>Player Stats</h2>
-          <div class="stat-row"><span>Cash:</span> <span id="player-cash" data-field="cash">$0</span></div>
-          <div class="stat-row"><span>Net Worth:</span> <span id="player-networth" data-field="netWorth">$0</span></div>
-          <div class="stat-row"><span>Market Day:</span> <span id="market-day" data-field="day">1</span></div>
+          <h2><i class="fa-solid fa-user-tie"></i> Player Stats</h2>
+          <div class="stat-row"><span><i class="fa-solid fa-wallet"></i> Cash:</span> <span id="player-cash" data-field="cash" class="value-ticker">$0</span></div>
+          <div class="stat-row"><span><i class="fa-solid fa-chart-line"></i> Net Worth:</span> <span id="player-networth" data-field="netWorth" class="value-ticker">$0</span></div>
+          <div class="stat-row"><span><i class="fa-regular fa-calendar-days"></i> Market Day:</span> <span id="market-day" data-field="day">1</span></div>
 
-          <h3 class="mt-4">Macro Environment</h3>
-          <div class="stat-row"><span>Phase:</span> <span id="macro-phase">-</span></div>
-          <div class="stat-row"><span>Fear & Greed:</span> <span id="macro-sentiment">-</span></div>
-          <div class="stat-row"><span>Interest Rate:</span> <span id="macro-interest">-</span></div>
-          <div class="stat-row"><span>Inflation:</span> <span id="macro-inflation">-</span></div>
-          <div class="stat-row"><span>GDP Growth:</span> <span id="macro-gdp">-</span></div>
+          <h3 class="mt-4"><i class="fa-solid fa-globe"></i> Macro Environment</h3>
+          <div class="stat-row"><span><i class="fa-solid fa-cloud-sun"></i> Phase:</span> <span id="macro-phase">-</span></div>
+          <div class="stat-row"><span><i class="fa-solid fa-gauge-high"></i> Fear & Greed:</span> <span id="macro-sentiment">-</span></div>
+          <div class="stat-row"><span><i class="fa-solid fa-percent"></i> Interest Rate:</span> <span id="macro-interest">-</span></div>
+          <div class="stat-row"><span><i class="fa-solid fa-arrow-trend-up"></i> Inflation:</span> <span id="macro-inflation">-</span></div>
+          <div class="stat-row"><span><i class="fa-solid fa-building-columns"></i> GDP Growth:</span> <span id="macro-gdp">-</span></div>
 
-          <h3 class="mt-4">Your Portfolio</h3>
+          <h3 class="mt-4"><i class="fa-solid fa-briefcase"></i> Your Portfolio</h3>
           <div class="stat-row" style="font-size: 0.85em; margin-bottom: 1rem;">
-            <span>Dividends Earned:</span> <span id="player-dividends" style="color: var(--positive-color)">$0</span>
+            <span><i class="fa-solid fa-coins"></i> Dividends Earned:</span> <span id="player-dividends" style="color: var(--positive-color)">$0</span>
           </div>
           <ul id="portfolio-list" class="portfolio-list"></ul>
         </aside>
@@ -70,9 +71,9 @@
         <!-- Main Content: Market View & Charts -->
         <section class="panel market-panel">
           <div class="market-header">
-            <h2>Market Overview</h2>
+            <h2><i class="fa-solid fa-chart-area"></i> Market Overview</h2>
             <div class="market-controls">
-              <label for="company-select">Select Company:</label>
+              <label for="company-select"><i class="fa-solid fa-magnifying-glass"></i> Select Company:</label>
               <select id="company-select"></select>
             </div>
           </div>
@@ -115,7 +116,7 @@
 
         <!-- Right Sidebar: News / Log -->
         <aside class="panel news-panel">
-          <h2>News & Alerts</h2>
+          <h2><i class="fa-solid fa-newspaper"></i> News & Alerts</h2>
           <ul id="news-list" class="news-list"></ul>
         </aside>
       </main>
