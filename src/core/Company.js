@@ -26,6 +26,11 @@ export class Company {
     this.dividendYield = 0;
     this.hype = 1.0;
     this.isBankrupt = false;
+
+    // Information Asymmetry
+    this.reportedRevenue = this.revenue;
+    this.reportedEps = 0; // Initialize at next tick
+    this.analystEstimates = { revenue: this.revenue, eps: 0 };
   }
 
   updateCreditRating(interestExpense, operatingIncome) {
@@ -228,6 +233,40 @@ export class Company {
     // Provide annualized EPS estimate instead of daily for better valuation
     this.eps = (netIncome * 360) / this.sharesOutstanding;
 
+    // Handle Fog of War & Analyst Estimates (Quarterly Reporting)
+    if (GameState.market.day % 30 === 0) {
+        const prevEstimateRevenue = this.analystEstimates.revenue;
+        const prevEstimateEps = this.analystEstimates.eps;
+
+        this.reportedRevenue = this.revenue;
+        this.reportedEps = this.eps;
+
+        // Evaluate if company beat or missed estimates
+        if (prevEstimateEps && this.reportedEps < prevEstimateEps * 0.95) {
+            // Significant miss
+            this.hype *= 0.8;
+            EventBus.emit('NEWS_ALERT', `EARNINGS MISS: ${this.name} missed EPS estimates by a wide margin.`);
+        } else if (prevEstimateEps && this.reportedEps > prevEstimateEps * 1.05) {
+            // Significant beat
+            this.hype *= 1.2;
+            EventBus.emit('NEWS_ALERT', `EARNINGS BEAT: ${this.name} crushes EPS estimates!`);
+        }
+
+        // Generate next quarter's estimates (real value + up to +/- 10% error margin)
+        const errorMarginRev = 1 + (randomGaussian() * 0.10);
+        const errorMarginEps = 1 + (randomGaussian() * 0.10);
+
+        // Assume slight growth for the estimate baseline
+        this.analystEstimates.revenue = this.revenue * 1.02 * errorMarginRev;
+        this.analystEstimates.eps = this.eps * 1.02 * errorMarginEps;
+    }
+
+    // Initialize estimates correctly on the very first tick if needed
+    if (this.reportedEps === 0 && this.eps !== 0) {
+       this.reportedEps = this.eps;
+       this.analystEstimates.eps = this.eps * (1 + (randomGaussian() * 0.05));
+    }
+
     // Manage EPS History for Trailing EPS
     this.epsHistory.push(this.eps);
     if (this.epsHistory.length > 4) {
@@ -295,6 +334,11 @@ export class Company {
 
       // Adjust history
       this.epsHistory = this.epsHistory.map(e => e / splitRatio);
+
+      // Adjust analyst estimates so they don't automatically miss
+      if (this.analystEstimates && this.analystEstimates.eps) {
+          this.analystEstimates.eps /= splitRatio;
+      }
 
       // We must adjust the price history so the chart doesn't look like a crash
       this.priceHistory = this.priceHistory.map(p => p / splitRatio);

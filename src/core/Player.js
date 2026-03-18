@@ -42,6 +42,7 @@ export const Player = {
     this.checkOwnership(company, holding.shares);
 
     EventBus.emit('TRADE_SUCCESS', `Bought ${shares} shares of ${company.name}`);
+    EventBus.emit('TRADE_SUCCESS_VALUE', { type: 'buy', value: totalCost });
     EventBus.emit('PLAYER_UPDATED', GameState.player);
     return true;
   },
@@ -81,6 +82,7 @@ export const Player = {
     this.checkOwnership(company, holding ? holding.shares : 0);
 
     EventBus.emit('TRADE_SUCCESS', `Sold ${shares} shares of ${company.name}`);
+    EventBus.emit('TRADE_SUCCESS_VALUE', { type: 'sell', value: totalProceeds });
     EventBus.emit('PLAYER_UPDATED', GameState.player);
     return true;
   },
@@ -120,16 +122,23 @@ export const Player = {
     }
   },
 
-  forceDividend(companyId) {
+  issueDividend(companyId, percentage) {
     const company = GameState.companies.find(c => c.id === companyId);
     if (!company || !company.isPlayerControlled) return false;
 
-    if (company.cashOnHand < company.revenue * 0.1) {
-      EventBus.emit('TRADE_ERROR', 'Company has insufficient cash for a dividend.');
+    if (percentage < 1 || percentage > 100) {
+      EventBus.emit('TRADE_ERROR', 'Invalid dividend percentage. Must be between 1 and 100.');
       return false;
     }
 
-    const dividendPool = company.cashOnHand * 0.5; // Distribute 50% of cash
+    const decPercentage = percentage / 100;
+    const dividendPool = company.cashOnHand * decPercentage;
+
+    if (dividendPool <= 0) {
+      EventBus.emit('TRADE_ERROR', 'Company has no cash to distribute.');
+      return false;
+    }
+
     company.cashOnHand -= dividendPool;
     const dps = dividendPool / company.sharesOutstanding;
     company.dividendYield = (dps / company.price) * 100;
@@ -143,26 +152,43 @@ export const Player = {
       GameState.player.totalDividends += payout;
     }
 
-    EventBus.emit('NEWS_ALERT', `You forced ${company.name} to issue a special dividend of $${dps.toFixed(2)}/share.`);
+    EventBus.emit('NEWS_ALERT', `You forced ${company.name} to issue a special dividend of $${dps.toFixed(2)}/share (Total: $${dividendPool.toLocaleString()}).`);
     EventBus.emit('PLAYER_UPDATED', GameState.player);
     return true;
   },
 
-  forceBuyback(companyId) {
+  stockBuyback(companyId, cashAmount) {
     const company = GameState.companies.find(c => c.id === companyId);
     if (!company || !company.isPlayerControlled) return false;
 
-    if (company.cashOnHand < company.revenue * 0.1) {
-      EventBus.emit('TRADE_ERROR', 'Company has insufficient cash for a buyback.');
+    if (cashAmount <= 0 || cashAmount > company.cashOnHand) {
+      EventBus.emit('TRADE_ERROR', 'Invalid buyback amount. Exceeds cash on hand.');
       return false;
     }
 
-    const buybackPool = company.cashOnHand * 0.5; // Use 50% of cash
-    company.cashOnHand -= buybackPool;
-    const sharesBought = Math.floor(buybackPool / company.price);
-    company.sharesOutstanding = Math.max(100000, company.sharesOutstanding - sharesBought);
+    company.cashOnHand -= cashAmount;
+    const sharesBought = Math.floor(cashAmount / company.price);
 
-    EventBus.emit('NEWS_ALERT', `You forced ${company.name} to buy back ${sharesBought.toLocaleString()} shares.`);
+    // Ensure we don't buy back more shares than exist (or create a 0 float situation)
+    const minFloat = 100000;
+    const actualSharesBought = Math.min(sharesBought, company.sharesOutstanding - minFloat);
+
+    if (actualSharesBought <= 0) {
+        EventBus.emit('TRADE_ERROR', 'Buyback failed: Minimum float reached.');
+        // Refund
+        company.cashOnHand += cashAmount;
+        return false;
+    }
+
+    company.sharesOutstanding -= actualSharesBought;
+    company.strategy = 'Player Directed (Buyback)';
+
+    // Re-evaluate player ownership % since float decreased
+    if (GameState.player.portfolio[companyId]) {
+        this.checkOwnership(company, GameState.player.portfolio[companyId].shares);
+    }
+
+    EventBus.emit('NEWS_ALERT', `You forced ${company.name} to buy back ${actualSharesBought.toLocaleString()} shares for $${cashAmount.toLocaleString()}.`);
     EventBus.emit('PLAYER_UPDATED', GameState.player);
     return true;
   }

@@ -17,6 +17,7 @@ export const GameState = {
     globalSentiment: 1.0,
     fearAndGreed: 50, // 0-100 scale
     economicPhase: 'Expansion',
+    marketRegime: 'Stagnant', // Bull, Bear, Crisis, Stagnant
     phaseTicksRemaining: 50,
     commodities: {
       energyCost: 1.0,
@@ -34,5 +35,10 @@ export const GameState = {
       Retail: { multiplier: 1.0, volatility: 0.03, pe: 15 }
     }
   },
+  rivals: [
+    { id: 'rival_1', name: 'Vanguard Group', cash: 50000000, portfolio: {} },
+    { id: 'rival_2', name: 'BlackRock', cash: 100000000, portfolio: {} },
+    { id: 'rival_3', name: 'State Street', cash: 75000000, portfolio: {} }
+  ],
   companies: []
 };

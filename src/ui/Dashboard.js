@@ -19,7 +19,9 @@ export const Dashboard = {
       selectedPrice: document.getElementById('selected-company-price'),
       selectedSector: document.getElementById('selected-company-sector'),
       selectedRevenue: document.getElementById('selected-company-revenue'),
+      selectedRevenueEst: document.getElementById('selected-company-revenue-est'),
       selectedEps: document.getElementById('selected-company-eps'),
+      selectedEpsEst: document.getElementById('selected-company-eps-est'),
       selectedShares: document.getElementById('selected-company-shares'),
       selectedStake: document.getElementById('selected-company-stake'),
       selectedRating: document.getElementById('selected-company-rating'),
@@ -54,21 +56,44 @@ export const Dashboard = {
     });
 
     this.elements.issueDividendBtn.addEventListener('click', () => {
-        Player.forceDividend(this.selectedCompanyId);
+        const input = prompt('Enter dividend percentage of cash to distribute (1-100):', '50');
+        if (input !== null) {
+            const percentage = parseInt(input, 10);
+            Player.issueDividend(this.selectedCompanyId, percentage);
+        }
     });
 
     this.elements.stockBuybackBtn.addEventListener('click', () => {
-        Player.forceBuyback(this.selectedCompanyId);
+        const company = GameState.companies.find(c => c.id === this.selectedCompanyId);
+        if (company) {
+            // Default to 10% cash buyback
+            const defaultCash = Math.floor(company.cashOnHand * 0.10);
+            const input = prompt(`Enter cash amount for buyback (Max: $${Math.floor(company.cashOnHand).toLocaleString()}):`, defaultCash.toString());
+            if (input !== null) {
+                const amount = parseInt(input.replace(/,/g, ''), 10);
+                Player.stockBuyback(this.selectedCompanyId, amount);
+            }
+        }
     });
 
-    this.elements.buyBtn.addEventListener('click', () => {
+    this.elements.buyBtn.addEventListener('click', (e) => {
       const amount = parseInt(this.elements.tradeAmount.value, 10);
-      Player.buy(this.selectedCompanyId, amount);
+      if (Player.buy(this.selectedCompanyId, amount)) {
+         this.spawnFloatingNumber(e, `-${formatCurrency(this.lastTradeCost)}`, 'red');
+      }
     });
 
-    this.elements.sellBtn.addEventListener('click', () => {
+    this.elements.sellBtn.addEventListener('click', (e) => {
       const amount = parseInt(this.elements.tradeAmount.value, 10);
-      Player.sell(this.selectedCompanyId, amount);
+      if (Player.sell(this.selectedCompanyId, amount)) {
+         this.spawnFloatingNumber(e, `+${formatCurrency(this.lastTradeProceeds)}`, 'green');
+      }
+    });
+
+    // Capture the exact trade value via EventBus for the floating numbers
+    EventBus.on('TRADE_SUCCESS_VALUE', (data) => {
+       if (data.type === 'buy') this.lastTradeCost = data.value;
+       if (data.type === 'sell') this.lastTradeProceeds = data.value;
     });
 
     this.elements.tradeAmount.addEventListener('keydown', (e) => {
@@ -111,6 +136,26 @@ export const Dashboard = {
     });
 
     this.update();
+  },
+
+  spawnFloatingNumber(e, text, color) {
+    const el = document.createElement('div');
+    el.textContent = text;
+    el.className = `floating-number ${color}`;
+
+    // Position near the button clicked
+    const rect = e.target.getBoundingClientRect();
+    el.style.left = `${rect.left + rect.width / 2}px`;
+    el.style.top = `${rect.top}px`;
+
+    document.body.appendChild(el);
+
+    // Remove after animation
+    setTimeout(() => {
+      if (document.body.contains(el)) {
+        document.body.removeChild(el);
+      }
+    }, 1000);
   },
 
   populateCompanySelect() {
@@ -208,8 +253,16 @@ export const Dashboard = {
     this.elements.selectedName.textContent = comp.name;
     this.elements.selectedPrice.textContent = formatCurrency(comp.price);
     this.elements.selectedSector.textContent = comp.sector;
-    this.elements.selectedRevenue.textContent = formatCurrency(comp.revenue);
-    this.elements.selectedEps.textContent = formatCurrency(comp.eps);
+
+    // Display Reported vs Estimated values
+    this.elements.selectedRevenue.textContent = formatCurrency(comp.reportedRevenue || comp.revenue);
+    const revEst = comp.analystEstimates ? comp.analystEstimates.revenue : comp.revenue;
+    this.elements.selectedRevenueEst.textContent = `(Est: ${formatCurrency(revEst)})`;
+
+    this.elements.selectedEps.textContent = formatCurrency(comp.reportedEps || 0);
+    const epsEst = comp.analystEstimates ? comp.analystEstimates.eps : 0;
+    this.elements.selectedEpsEst.textContent = `(Est: ${formatCurrency(epsEst)})`;
+
     this.elements.selectedShares.textContent = formatLargeNumber(comp.sharesOutstanding);
     this.elements.selectedRating.textContent = comp.creditRating || '-';
     this.elements.selectedDebt.textContent = formatLargeNumber(comp.totalDebt || 0);
