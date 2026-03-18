@@ -72,10 +72,24 @@
         <section class="panel market-panel">
           <div class="market-header">
             <h2><i class="fa-solid fa-chart-area"></i> Market Overview</h2>
-            <div class="market-controls">
-              <label for="company-select"><i class="fa-solid fa-magnifying-glass"></i> Select Company:</label>
-              <select id="company-select"></select>
-            </div>
+          </div>
+
+          <!-- Sortable Market Table (Ticket 3.2) -->
+          <div class="market-table-container">
+            <table class="market-table">
+              <thead>
+                <tr>
+                  <th data-sort="name">Ticker <i class="fa-solid fa-sort"></i></th>
+                  <th data-sort="price">Price <i class="fa-solid fa-sort"></i></th>
+                  <th data-sort="change">1D Change <i class="fa-solid fa-sort"></i></th>
+                  <th data-sort="pe">P/E <i class="fa-solid fa-sort"></i></th>
+                  <th data-sort="marketCap">Market Cap <i class="fa-solid fa-sort"></i></th>
+                </tr>
+              </thead>
+              <tbody id="market-table-body">
+                <!-- Rows injected via JS -->
+              </tbody>
+            </table>
           </div>
 
           <div class="chart-container">

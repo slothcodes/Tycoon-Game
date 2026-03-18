@@ -262,6 +262,60 @@ span[id^="player-"], span[id^="macro-"], span[id^="selected-"], .ticker-content,
   box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
 }
 
+.market-table-container {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.market-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.market-table th:hover {
+  color: var(--text-primary);
+}
+
+.market-table th i {
+  font-size: 0.8em;
+  margin-left: 0.25rem;
+  color: var(--accent-color);
+}
+
+.market-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.market-table tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.market-table tr:hover {
+  background-color: rgba(0, 242, 255, 0.05);
+}
+
+.market-table tr.selected-row {
+  background-color: rgba(0, 242, 255, 0.1);
+  border-left: 3px solid var(--accent-color);
+}
+
 .chart-container {
   height: 350px;
   margin-bottom: 1.5rem;
