@@ -239,7 +239,7 @@ span[id^="player-"], span[id^="macro-"], span[id^="selected-"], .ticker-content,
 }
 
 .market-controls select {
-  background-color: rgba(0,0,0,0.3);
+  background-color: #0b0f19;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -248,10 +248,18 @@ span[id^="player-"], span[id^="macro-"], span[id^="selected-"], .ticker-content,
   font-size: 0.9rem;
   outline: none;
   transition: border-color 0.3s ease;
+  cursor: pointer;
+}
+
+.market-controls select option {
+  background-color: #0b0f19;
+  color: var(--text-primary);
+  padding: 8px;
 }
 
 .market-controls select:focus {
   border-color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
 }
 
 .chart-container {
