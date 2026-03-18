@@ -50,9 +50,14 @@ export const Dashboard = {
     this.elements.investRndBtn = document.getElementById('invest-rnd-btn');
     this.elements.restructureBtn = document.getElementById('restructure-btn');
 
-    // Select first company by default
+    // Select player-controlled company by default, else first company
     if (GameState.companies.length > 0) {
-      this.selectCompany(GameState.companies[0].id);
+      const controlledCompany = GameState.companies.find(c => c.isPlayerControlled);
+      if (controlledCompany) {
+        this.selectCompany(controlledCompany.id);
+      } else {
+        this.selectCompany(GameState.companies[0].id);
+      }
     }
 
     // Bind UI Events
